@@ -1,0 +1,73 @@
+/* Estilos CSS adicionales para WareFlow WMS */
+
+body, [data-testid="stAppViewContainer"] {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar {
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+}
+
+.navbar-body {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.navbar-icon {
+    font-size: 1.8rem;
+}
+
+.navbar-title {
+    margin: 0;
+    font-size: 1.6rem;
+    color: #1E3A5F;
+}
+
+.navbar-subtitle {
+    margin: 0.25rem 0 0 0;
+    color: #5E6C84;
+    font-size: 0.95rem;
+}
+
+.navbar-divider {
+    border: none;
+    border-bottom: 1px solid #E2E8F0;
+    margin: 1rem 0;
+}
+
+.dashboard-welcome {
+    padding: 1rem 1.25rem;
+    background: #FFFFFF;
+    border-radius: 1rem;
+    box-shadow: 0 14px 30px rgba(60, 72, 88, 0.08);
+    margin-bottom: 1rem;
+}
+
+.dashboard-welcome h2 {
+    margin: 0 0 0.5rem 0;
+    color: #0F172A;
+}
+
+.dashboard-welcome p {
+    margin: 0;
+    color: #475569;
+}
+
+.dashboard-card {
+    background: #FFFFFF;
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 14px 30px rgba(60, 72, 88, 0.06);
+    min-height: 140px;
+}
+
+.dashboard-card h3 {
+    margin-top: 0;
+    color: #1E3A5F;
+}
+
+.dashboard-card p {
+    color: #475569;
+}
