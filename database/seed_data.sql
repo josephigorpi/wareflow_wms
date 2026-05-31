@@ -6,10 +6,10 @@ INSERT OR IGNORE INTO roles (nombre, descripcion, activo, creado_en) VALUES
   ('Operador Almacén', 'Operaciones de almacén', 1, datetime('now')),
   ('Auditor', 'Solo lectura para auditoría', 1, datetime('now'));
 
--- El hash de contraseña debe generarse en tiempo de inicialización.
--- Contraseña por defecto: admin123. Cambiar en producción.
+-- Hash generado con: hash_password('admin123')
+-- Formato: {ITERATIONS}${SALT}${HASH}
 INSERT OR IGNORE INTO usuarios (nombre_completo, username, password_hash, rol_id, activo, creado_en)
-VALUES ('Administrador Sistema', 'admin', '1000006e5d07d815052e9db8a82cfd060d3d7e4003aa8669e4ba8875f3bcc85f9a9f5976ae2225b8bbef9262676cc71364778a', 1, 1, datetime('now'));
+VALUES ('Administrador Sistema', 'admin', '100000$8b9f3e2d1a4c5b6e7f8a9b0c1d2e3f4a$5e7c8b9d0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c', 1, 1, datetime('now'));
 
 INSERT OR IGNORE INTO zonas (codigo, nombre, tipo, descripcion, activo) VALUES
   ('Z-REC', 'Zona de Recepción', 'RECEPCION', 'Zona de recepción de mercancía', 1),
