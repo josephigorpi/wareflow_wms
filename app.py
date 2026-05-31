@@ -3,14 +3,15 @@
 import streamlit as st
 
 from components.styles import load_global_styles
-from database.db_manager import initialize_database
+from database.db_manager import reset_database, execute_script
 from pages import __init__  # noqa: F401
 
-# Inicializar la base de datos si no existe
+# Reinicializar la base de datos (elimina y recrea con nuevos datos)
 try:
-    initialize_database()
-except Exception:
-    pass  # Si ya existe, no hacer nada
+    reset_database()
+    execute_script("database/seed_data.sql")
+except Exception as e:
+    st.error(f"Error al inicializar la base de datos: {e}")
 
 st.set_page_config(page_title="WareFlow WMS", layout="wide")
 load_global_styles()
