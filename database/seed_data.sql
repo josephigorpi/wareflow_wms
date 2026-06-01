@@ -6,10 +6,10 @@ INSERT OR IGNORE INTO roles (nombre, descripcion, activo, creado_en) VALUES
   ('Operador Almacén', 'Operaciones de almacén', 1, datetime('now')),
   ('Auditor', 'Solo lectura para auditoría', 1, datetime('now'));
 
--- Hash generado con: hash_password('admin123')
--- Formato: {ITERATIONS}${SALT}${HASH}
+-- Hash generado con: python generate_password_hash.py
+-- Contraseña: admin123
 INSERT OR IGNORE INTO usuarios (nombre_completo, username, password_hash, rol_id, activo, creado_en)
-VALUES ('Administrador Sistema', 'admin', '100000$8b9f3e2d1a4c5b6e7f8a9b0c1d2e3f4a$5e7c8b9d0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c', 1, 1, datetime('now'));
+VALUES ('Administrador Sistema', 'admin', '100000$fb5bf2990ab17b3baedae08b5db0f19e$2fa1060cb4c8f24bfedef24b68beb4b4cb25596f7fb108f59aff87b5aeccf9b8', 1, 1, datetime('now'));
 
 INSERT OR IGNORE INTO zonas (codigo, nombre, tipo, descripcion, activo) VALUES
   ('Z-REC', 'Zona de Recepción', 'RECEPCION', 'Zona de recepción de mercancía', 1),
