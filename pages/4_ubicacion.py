@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from components.alerts import alert_error, alert_success, alert_warning
-from components.forms import form_submit_button, input_number, input_select, input_text
+from components.forms import input_number, input_select, input_text
 from components.navbar import render_navbar
 from components.sidebar import render_sidebar
 from components.tables import render_table
@@ -144,12 +144,9 @@ if can_write and show_form:
                     key="ub_form_cap_m3",
                 )
 
-            fb1, fb2 = st.columns([1, 5])
+            fb1, fb2, _ = st.columns([1, 1, 6])
             with fb1:
-                submitted = form_submit_button(
-                    label="Guardar" if is_edit else "Crear",
-                    key="ub_form_submit",
-                )
+                submitted = st.form_submit_button("Guardar" if is_edit else "Crear")
             with fb2:
                 cancelled = st.form_submit_button("Cancelar")
 
