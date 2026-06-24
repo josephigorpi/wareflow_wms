@@ -1,52 +1,102 @@
 """Lógica de negocio de productos para WareFlow WMS."""
 
-from database.db_manager import fetch_all, fetch_one, insert, update
+from database.connection import get_connection
+from datetime import datetime, timedelta
 
 
 def get_all_products():
-    """Obtiene todos los productos activos."""
-    query = "SELECT * FROM productos WHERE activo = 1 ORDER BY nombre"
-    results = fetch_all(query)
-    return [dict(row) for row in results] if results else []
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM productos WHERE activo = 1")
+    return cursor.fetchall()
 
 
-def get_product_by_id(product_id):
-    """Obtiene un producto por su ID."""
-    query = "SELECT * FROM productos WHERE id = ?"
-    result = fetch_one(query, (product_id,))
-    return dict(result) if result else None
+def get_products_with_inventory():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.*, COALESCE(SUM(i.cantidad), 0) as stock_total
+        FROM productos p
+        LEFT JOIN inventario i ON p.id = i.producto_id
+        WHERE p.activo = 1
+        GROUP BY p.id
+    """)
+    return cursor.fetchall()
 
 
-def get_product_by_sku(sku):
-    """Obtiene un producto por su SKU."""
-    query = "SELECT * FROM productos WHERE sku = ? AND activo = 1"
-    result = fetch_one(query, (sku,))
-    return dict(result) if result else None
+def get_products_low_stock():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.*, COALESCE(SUM(i.cantidad), 0) as stock_total
+        FROM productos p
+        LEFT JOIN inventario i ON p.id = i.producto_id
+        WHERE p.activo = 1
+        GROUP BY p.id
+        HAVING stock_total <= p.stock_minimo
+    """)
+    return cursor.fetchall()
 
 
-def get_inventory(product_id=None, location_id=None):
-    """Obtiene inventario, opcionalmente filtrado por producto y/o ubicación."""
-    query = """
-        SELECT 
-            i.id, i.producto_id, i.ubicacion_id, i.cantidad, i.lote, i.fecha_vencimiento,
-            p.sku, p.nombre as producto_nombre,
-            u.codigo as ubicacion_codigo, z.nombre as zona_nombre
+def get_products_high_stock():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.*, COALESCE(SUM(i.cantidad), 0) as stock_total
+        FROM productos p
+        LEFT JOIN inventario i ON p.id = i.producto_id
+        WHERE p.activo = 1 AND p.stock_maximo IS NOT NULL
+        GROUP BY p.id
+        HAVING stock_total >= p.stock_maximo
+    """)
+    return cursor.fetchall()
+
+
+def count_active_products():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM productos WHERE activo = 1")
+    return cursor.fetchone()[0]
+
+
+def search_products(query: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.*, COALESCE(SUM(i.cantidad), 0) as stock_total
+        FROM productos p
+        LEFT JOIN inventario i ON p.id = i.producto_id
+        WHERE p.activo = 1 AND (p.sku LIKE ? OR p.nombre LIKE ?)
+        GROUP BY p.id
+    """, (f"%{query}%", f"%{query}%"))
+    return cursor.fetchall()
+
+
+def count_low_stock_products():
+    return len(get_products_low_stock())
+
+
+def count_high_stock_products():
+    return len(get_products_high_stock())
+
+
+def get_expiring_products(days: int = 30):
+    conn = get_connection()
+    cursor = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+    future_date = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
+    cursor.execute("""
+        SELECT DISTINCT p.*, i.lote, i.fecha_vencimiento, i.cantidad, u.codigo as ubicacion_codigo
         FROM inventario i
         JOIN productos p ON i.producto_id = p.id
         JOIN ubicaciones u ON i.ubicacion_id = u.id
-        JOIN zonas z ON u.zona_id = z.id
-        WHERE i.cantidad > 0
-    """
-    params = []
-    
-    if product_id:
-        query += " AND i.producto_id = ?"
-        params.append(product_id)
-    
-    if location_id:
-        query += " AND i.ubicacion_id = ?"
-        params.append(location_id)
-    
-    query += " ORDER BY p.nombre"
-    results = fetch_all(query, tuple(params))
-    return [dict(row) for row in results] if results else []
+        WHERE i.fecha_vencimiento IS NOT NULL 
+        AND i.fecha_vencimiento BETWEEN ? AND ?
+        AND p.activo = 1
+        ORDER BY i.fecha_vencimiento
+    """, (today, future_date))
+    return cursor.fetchall()
+
+
+def count_expiring_products(days: int = 30):
+    return len(get_expiring_products(days))
