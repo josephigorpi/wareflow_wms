@@ -16,5 +16,5 @@ except Exception as e:
 st.set_page_config(page_title="WareFlow WMS", layout="wide")
 load_global_styles()
 
-st.markdown("# WareFlow WMS")
-st.markdown("Bienvenido a WareFlow WMS. Seleccione un módulo desde el menú lateral.")
+# Eliminamos contenido extra para que se vea limpio
+st.switch_page("pages/0_login.py")

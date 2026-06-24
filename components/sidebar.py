@@ -17,7 +17,7 @@ def render_sidebar(current_page: str = "") -> None:
 
     if st.sidebar.button("Cerrar sesión"):
         logout()
-        st.experimental_rerun()
+        st.rerun()
 
     st.sidebar.markdown("---")
     permisos = st.session_state.get("permisos", {})
@@ -25,6 +25,7 @@ def render_sidebar(current_page: str = "") -> None:
     menu_items = [
         ("dashboard", "Dashboard"),
         ("recepcion", "Recepción"),
+        ("inspeccion", "Inspección"),
         ("inventario", "Inventario"),
         ("ubicacion", "Ubicación"),
         ("picking", "Picking"),
@@ -35,6 +36,7 @@ def render_sidebar(current_page: str = "") -> None:
     label_to_page = {
         "Dashboard": "1_dashboard",
         "Recepción": "2_recepcion",
+        "Inspección": "7_inspeccion",
         "Inventario": "3_inventario",
         "Ubicación": "4_ubicacion",
         "Picking": "5_picking",

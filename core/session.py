@@ -23,3 +23,7 @@ def reset_session() -> None:
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     init_session()
+
+
+def get_current_user_id():
+    return st.session_state.get("user_id")

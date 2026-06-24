@@ -1,53 +1,73 @@
-/* Estilos CSS adicionales para WareFlow WMS */
+/* Estilos modernos, minimalistas y formales para WareFlow WMS */
 
-body, [data-testid="stAppViewContainer"] {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* Reset y fuentes base */
+body, [data-testid="stAppViewContainer"], [data-testid="stMarkdownContainer"] {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+    color: #1e293b;
 }
 
+/* Background limpio */
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Sidebar profesional */
+[data-testid="stSidebar"] {
+    background: #ffffff !important;
+    border-right: 1px solid #e2e8f0;
+}
+
+/* Navbar minimalista */
 .navbar {
-    padding: 0.5rem 0;
-    margin-bottom: 1rem;
+    padding: 1.5rem 0;
+    margin-bottom: 0;
 }
 
 .navbar-body {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
 .navbar-icon {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
 }
 
 .navbar-title {
     margin: 0;
-    font-size: 1.6rem;
-    color: #1E3A5F;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.025em;
 }
 
 .navbar-subtitle {
-    margin: 0.25rem 0 0 0;
-    color: #5E6C84;
-    font-size: 0.95rem;
+    margin: 0.35rem 0 0 0;
+    color: #64748b;
+    font-size: 1rem;
+    font-weight: 400;
 }
 
 .navbar-divider {
     border: none;
-    border-bottom: 1px solid #E2E8F0;
-    margin: 1rem 0;
+    border-bottom: 1px solid #e2e8f0;
+    margin: 1.25rem 0 2rem 0;
 }
 
+/* Cards limpias */
 .dashboard-welcome {
-    padding: 1rem 1.25rem;
-    background: #FFFFFF;
+    padding: 2rem;
+    background: #ffffff;
     border-radius: 1rem;
-    box-shadow: 0 14px 30px rgba(60, 72, 88, 0.08);
-    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
 }
 
 .dashboard-welcome h2 {
-    margin: 0 0 0.5rem 0;
-    color: #0F172A;
+    margin: 0 0 0.75rem 0;
+    color: #0f172a;
+    font-weight: 700;
 }
 
 .dashboard-welcome p {
@@ -56,18 +76,82 @@ body, [data-testid="stAppViewContainer"] {
 }
 
 .dashboard-card {
-    background: #FFFFFF;
-    padding: 1rem;
+    background: #ffffff;
+    padding: 1.5rem;
     border-radius: 1rem;
-    box-shadow: 0 14px 30px rgba(60, 72, 88, 0.06);
-    min-height: 140px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    min-height: 160px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
 }
 
 .dashboard-card h3 {
     margin-top: 0;
-    color: #1E3A5F;
+    color: #0f172a;
+    font-weight: 700;
 }
 
 .dashboard-card p {
     color: #475569;
+}
+
+/* Buttons formales */
+button[data-testid="baseButton-secondary"] {
+    background: #3b82f6 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+button[data-testid="baseButton-secondary"]:hover {
+    background: #2563eb !important;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Selects y inputs limpios */
+[data-testid="stSelectbox"] > div > div {
+    border-radius: 0.5rem !important;
+    border: 1px solid #e2e8f0 !important;
+    background: white !important;
+}
+
+[data-testid="stTextInput"] > div > div > input,
+[data-testid="stNumberInput"] > div > div > input {
+    border-radius: 0.5rem !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* Tabs elegantes */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0.5rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+    height: 3rem;
+    padding: 0 1.5rem;
+    background: #f1f5f9 !important;
+    border-radius: 0.5rem;
+    color: #475569 !important;
+    font-weight: 600;
+}
+
+.stTabs [aria-selected="true"] {
+    background: #3b82f6 !important;
+    color: white !important;
+}
+
+/* Tables limpias */
+[data-testid="stDataFrame"] {
+    border-radius: 0.75rem !important;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }

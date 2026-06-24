@@ -4,6 +4,7 @@ ROLES_PERMISSIONS = {
     "Administrador": {
         "dashboard": ["leer", "escribir"],
         "recepcion": ["leer", "escribir"],
+        "inspeccion": ["leer", "escribir"],
         "inventario": ["leer", "escribir"],
         "ubicacion": ["leer", "escribir"],
         "picking": ["leer", "escribir"],
@@ -13,6 +14,7 @@ ROLES_PERMISSIONS = {
     "Supervisor": {
         "dashboard": ["leer"],
         "recepcion": ["leer", "escribir"],
+        "inspeccion": ["leer", "escribir"],
         "inventario": ["leer", "escribir"],
         "ubicacion": ["leer", "escribir"],
         "picking": ["leer", "escribir"],
@@ -21,6 +23,7 @@ ROLES_PERMISSIONS = {
     "Operador Almacén": {
         "dashboard": ["leer"],
         "recepcion": ["leer", "escribir"],
+        "inspeccion": ["leer", "escribir"],
         "inventario": ["leer", "escribir"],
         "ubicacion": ["leer", "escribir"],
         "picking": ["leer", "escribir"],
