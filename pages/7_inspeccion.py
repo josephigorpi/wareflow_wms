@@ -28,9 +28,9 @@ os.makedirs(ANOMALIAS_FOLDER, exist_ok=True)
 
 # Título de la página
 st.markdown("""
-    <div style="margin-bottom: 2rem;">
-        <h1 style="color: #0f172a; font-weight: 700; margin: 0;">🔍 Inspección de Mercancía</h1>
-        <p style="color: #64748b; margin-top: 0.5rem; font-size: 1.1rem;">Valida la calidad y autoriza la entrada de productos</p>
+    <div class="top-navbar">
+        <h1>🔍 Inspección de Mercancía</h1>
+        <p>Valida la calidad y autoriza la entrada de productos</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -43,97 +43,120 @@ with tab1:
     pending = [m for m in pending if m['tipo'] == 'ENTRADA']
     
     if not pending:
-        st.markdown('<div style="background: white; padding: 3rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); text-align: center;">', unsafe_allow_html=True)
-        alert_info("🎉 No hay movimientos pendientes de inspección!")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("""
+            <div class="sidebar-card success" style="text-align: center; padding: 3rem 2rem;">
+                <h4 style="margin: 0; font-size: 1.5rem; color: #065f46;">🎉 ¡Excelente!</h4>
+                <p style="color: #065f46; margin: 1rem 0 0 0;">No hay movimientos pendientes de inspección</p>
+            </div>
+        """, unsafe_allow_html=True)
     else:
-        # Listado de pendientes
-        df_pending = pd.DataFrame([dict(row) for row in pending])
-        df_pending = df_pending[['id', 'tipo', 'referencia', 'cantidad', 'fecha_movimiento']]
-        df_pending.columns = ['ID', 'Tipo', 'Referencia', 'Cantidad', 'Fecha']
+        # Layout con columnas
+        col_main, col_info = st.columns([2, 0.95])
         
-        st.markdown('<div style="background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
-        st.subheader("Movimientos Pendientes")
-        st.dataframe(df_pending, use_container_width=True, hide_index=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # Seleccionar movimiento para inspeccionar
-        opciones_movimientos = [f"ID {m['id']} - Ref: {m['referencia']}" for m in pending]
-        movimiento_seleccionado = st.selectbox("Selecciona un movimiento para inspeccionar", opciones_movimientos, index=0)
-        
-        if movimiento_seleccionado:
-            mov_id = int(movimiento_seleccionado.split(" - ")[0].split(" ")[1])
-            movimiento = next((m for m in pending if m['id'] == mov_id), None)
+        with col_main:
+            # Resumen de pendientes
+            st.markdown(f"""
+                <div class="section-card">
+                    <div class="section-title">⚠️ Pendientes de Inspección</div>
+                    <p style="color: #6b7280; margin: 0.5rem 0;">Total: <strong style="font-size: 1.3rem; color: #ef4444;">{len(pending)} movimiento{'s' if len(pending) > 1 else ''}</strong></p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Seleccionar movimiento
+            opciones_movimientos = [f"ID {m['id']} - Ref: {m['referencia']} ({m['cantidad']} unidades)" for m in pending]
+            movimiento_idx = st.selectbox("Selecciona movimiento a inspeccionar", range(len(opciones_movimientos)), 
+                                         format_func=lambda x: opciones_movimientos[x], label_visibility="collapsed")
+            
+            movimiento = pending[movimiento_idx]
+            mov_id = movimiento['id']
             
             if movimiento:
                 producto = get_product_by_id(movimiento['producto_id'])
                 ubicacion_dest = get_location_by_id(movimiento['ubicacion_destino_id'])
                 
-                st.markdown('<div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);">', unsafe_allow_html=True)
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
                 
-                # Detalles del movimiento
+                # Detalles del Producto
+                st.markdown("""
+                    <div class="section-card">
+                        <div class="section-title">📦 Detalles del Producto</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    st.markdown(f"### 📦 Producto")
-                    st.write(f"**SKU**: {producto['sku']}")
-                    st.write(f"**Nombre**: {producto['nombre']}")
-                    st.write(f"**Cantidad**: {movimiento['cantidad']}")
+                    st.write(f"**SKU:** {producto['sku']}")
+                    st.write(f"**Nombre:** {producto['nombre']}")
                 with col_b:
-                    st.markdown(f"### 📍 Destino")
-                    st.write(f"**Ubicación**: {ubicacion_dest['codigo']}")
-                    st.write(f"**Referencia**: {movimiento['referencia']}")
-                    st.write(f"**Fecha**: {movimiento['fecha_movimiento']}")
+                    st.write(f"**Cantidad a Inspeccionar:** {movimiento['cantidad']}")
+                    st.write(f"**Ubicación Destino:** {ubicacion_dest['codigo']}")
                 
-                st.markdown("<hr style='border: 1px solid #e2e8f0; margin: 1.5rem 0;'>", unsafe_allow_html=True)
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
                 
-                st.markdown("### ✅ Verificación de Calidad")
-                calidad_ok = st.checkbox("Calidad verificada y conforme", value=False)
+                # Verificación de Calidad
+                st.markdown("""
+                    <div class="section-card">
+                        <div class="section-title">✅ Verificación de Calidad</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                calidad_ok = st.checkbox("✓ Calidad verificada y conforme")
+                
+                if not calidad_ok:
+                    st.markdown('<div class="alert-box alert-warning">⚠️ Debes verificar la calidad antes de autorizar</div>', unsafe_allow_html=True)
                 
                 cantidad_conforme = st.number_input(
-                    "Cantidad conforme (Cumple especificaciones)", 
+                    "Cantidad conforme", 
                     min_value=0, 
                     max_value=movimiento['cantidad'],
-                    value=movimiento['cantidad']
+                    value=movimiento['cantidad'],
+                    label_visibility="collapsed"
                 )
                 
-                st.markdown("<hr style='border: 1px solid #e2e8f0; margin: 1.5rem 0;'>", unsafe_allow_html=True)
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
                 
-                st.markdown("### ⚠️ Registro de Anomalías")
-                tiene_anomalias = st.checkbox("Presenta anomalías", value=False)
+                # Anomalías
+                st.markdown("""
+                    <div class="section-card">
+                        <div class="section-title">⚠️ Registro de Anomalías</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                tiene_anomalias = st.checkbox("Presenta anomalías")
                 
                 anomalias_registradas = []
                 
                 if tiene_anomalias:
-                    # Formulario de anomalías
                     col_anom1, col_anom2 = st.columns(2)
                     
                     with col_anom1:
                         tipo_anomalia = st.selectbox(
                             "Tipo de Anomalía",
-                            ["Daño Físico", "Oxidación", "Vencido", "Falta de Cantidad", "Otro"]
+                            ["Daño Físico", "Oxidación", "Vencido", "Falta de Cantidad", "Otro"],
+                            label_visibility="collapsed"
                         )
                         cantidad_danada = st.number_input(
                             "Cantidad de productos dañados",
                             min_value=0,
                             max_value=movimiento['cantidad'],
-                            value=0
+                            value=0,
+                            label_visibility="collapsed"
                         )
                     
                     with col_anom2:
                         severidad = st.select_slider(
-                            "Severidad de la anomalía",
+                            "Severidad",
                             ["Leve", "Moderado", "Grave"],
                             value="Moderado"
                         )
                     
                     descripcion_anomalias = st.text_area(
-                        "Descripción detallada de la anomalía",
-                        placeholder="Describe qué pasó, cómo, dónde..."
+                        "Descripción de la anomalía",
+                        placeholder="Describe qué pasó...",
+                        height=80,
+                        label_visibility="collapsed"
                     )
                     
-                    # Upload de foto
                     foto_uploaded = st.file_uploader(
                         "📸 Subir foto de evidencia",
                         type=["jpg", "jpeg", "png"],
@@ -152,7 +175,7 @@ with tab1:
                         foto_path = filepath
                         st.success(f"✅ Foto guardada: {filename}")
                     
-                    if st.button("➕ Registrar esta anomalía", use_container_width=True):
+                    if st.button("➕ Registrar Anomalía", use_container_width=True):
                         if cantidad_danada > 0 or descripcion_anomalias:
                             anomalias_registradas.append({
                                 "tipo": tipo_anomalia,
@@ -165,109 +188,197 @@ with tab1:
                         else:
                             alert_warning("⚠️ Ingresa una cantidad o descripción")
                 
-                st.markdown("<hr style='border: 1px solid #e2e8f0; margin: 1.5rem 0;'>", unsafe_allow_html=True)
+                st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+                
+                # Decisión Final
+                st.markdown("""
+                    <div class="section-card">
+                        <div class="section-title">📝 Decisión Final</div>
+                    </div>
+                """, unsafe_allow_html=True)
                 
                 decision = st.radio(
-                    "### 📝 Decisión Final", 
+                    "Acción:",
                     ["✅ Autorizar Entrada", "❌ Rechazar Entrada"],
-                    index=0
+                    index=0,
+                    horizontal=True,
+                    label_visibility="collapsed"
                 )
                 
-                observaciones_finales = st.text_area("Observaciones de inspección (opcional)")
+                observaciones_finales = st.text_area(
+                    "Observaciones finales",
+                    placeholder="Notas adicionales...",
+                    height=80,
+                    label_visibility="collapsed"
+                )
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 
-                col_izq, col_der = st.columns(2)
-                with col_izq:
-                    if st.button("✅ Confirmar Inspección", type="primary", use_container_width=True):
-                        try:
-                            if not calidad_ok and decision == "✅ Autorizar Entrada":
-                                alert_error("Primero verifica la calidad del producto!")
+                if st.button("✅ Confirmar Inspección", use_container_width=True):
+                    try:
+                        if not calidad_ok and decision == "✅ Autorizar Entrada":
+                            alert_error("Primero verifica la calidad del producto!")
+                        else:
+                            lote = None
+                            fecha_vencimiento = None
+                            if "lotes_temp" in st.session_state and mov_id in st.session_state["lotes_temp"]:
+                                lote = st.session_state["lotes_temp"][mov_id]["lote"]
+                                fecha_vencimiento = st.session_state["lotes_temp"][mov_id]["fecha_vencimiento"]
+                            
+                            obs_completas = []
+                            if observaciones_finales:
+                                obs_completas.append(observaciones_finales)
+                            
+                            # Registrar anomalías en BD
+                            if tiene_anomalias:
+                                anomalias_previas = get_anomalies_by_movement(mov_id)
+                                
+                                for anom in anomalias_registradas:
+                                    create_anomaly(
+                                        movimiento_id=mov_id,
+                                        tipo_anomalia=anom['tipo'],
+                                        cantidad_danada=anom['cantidad'],
+                                        severidad=anom['severidad'],
+                                        descripcion=anom['descripcion'],
+                                        foto_path=anom['foto'] or ""
+                                    )
+                                    obs_completas.append(f"Anomalía: {anom['tipo']} (Severidad: {anom['severidad']}, Cantidad: {anom['cantidad']})")
+                            
+                            if decision == "✅ Autorizar Entrada":
+                                # Actualizar inventario con cantidad conforme
+                                if cantidad_conforme > 0:
+                                    update_inventory(
+                                        product_id=producto['id'],
+                                        ubicacion_id=ubicacion_dest['id'],
+                                        cantidad=cantidad_conforme,
+                                        lote=lote,
+                                        fecha_vencimiento=fecha_vencimiento
+                                    )
+                                update_movement_status(
+                                    movement_id=mov_id,
+                                    nuevo_estado="APROBADO",
+                                    observaciones=" | ".join(obs_completas) if obs_completas else ""
+                                )
+                                alert_success("✅ Entrada autorizada! Inventario actualizado.")
                             else:
-                                lote = None
-                                fecha_vencimiento = None
-                                if "lotes_temp" in st.session_state and mov_id in st.session_state["lotes_temp"]:
-                                    lote = st.session_state["lotes_temp"][mov_id]["lote"]
-                                    fecha_vencimiento = st.session_state["lotes_temp"][mov_id]["fecha_vencimiento"]
-                                
-                                obs_completas = []
-                                if observaciones_finales:
-                                    obs_completas.append(observaciones_finales)
-                                
-                                # Registrar anomalías en BD
-                                if tiene_anomalias:
-                                    # Obtener anomalías previas del movimiento
-                                    anomalias_previas = get_anomalies_by_movement(mov_id)
-                                    
-                                    # Agregar nuevas anomalías
-                                    for anom in anomalias_registradas:
-                                        create_anomaly(
-                                            movimiento_id=mov_id,
-                                            tipo_anomalia=anom['tipo'],
-                                            cantidad_danada=anom['cantidad'],
-                                            severidad=anom['severidad'],
-                                            descripcion=anom['descripcion'],
-                                            foto_path=anom['foto'] or ""
-                                        )
-                                        obs_completas.append(f"Anomalía: {anom['tipo']} (Severidad: {anom['severidad']}, Cantidad: {anom['cantidad']})")
-                                
-                                if decision == "✅ Autorizar Entrada":
-                                    # Actualizar inventario con cantidad conforme
-                                    if cantidad_conforme > 0:
-                                        update_inventory(
-                                            product_id=producto['id'],
-                                            ubicacion_id=ubicacion_dest['id'],
-                                            cantidad=cantidad_conforme,
-                                            lote=lote,
-                                            fecha_vencimiento=fecha_vencimiento
-                                        )
-                                    update_movement_status(
-                                        movement_id=mov_id,
-                                        nuevo_estado="APROBADO",
-                                        observaciones=" | ".join(obs_completas) if obs_completas else ""
-                                    )
-                                    alert_success("✅ Entrada autorizada! Inventario actualizado.")
-                                else:
-                                    update_movement_status(
-                                        movement_id=mov_id,
-                                        nuevo_estado="RECHAZADO",
-                                        observaciones=" | ".join(obs_completas) if obs_completas else ""
-                                    )
-                                    alert_warning("⚠️ Entrada rechazada.")
-                                
-                                if "lotes_temp" in st.session_state and mov_id in st.session_state["lotes_temp"]:
-                                    del st.session_state["lotes_temp"][mov_id]
-                                
-                                st.rerun()
-                        except Exception as e:
-                            alert_error(f"Error: {str(e)}")
-                
-                st.markdown('</div>', unsafe_allow_html=True)
+                                update_movement_status(
+                                    movement_id=mov_id,
+                                    nuevo_estado="RECHAZADO",
+                                    observaciones=" | ".join(obs_completas) if obs_completas else ""
+                                )
+                                alert_warning("⚠️ Entrada rechazada.")
+                            
+                            if "lotes_temp" in st.session_state and mov_id in st.session_state["lotes_temp"]:
+                                del st.session_state["lotes_temp"][mov_id]
+                            
+                            st.rerun()
+                    except Exception as e:
+                        alert_error(f"Error: {str(e)}")
+        
+        # Sidebar con información
+        with col_info:
+            st.markdown(f"""
+                <div class="sidebar-card info">
+                    <h4>📌 Referencia</h4>
+                    <p>{movimiento['referencia']}</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+                <div class="sidebar-card info">
+                    <h4>📊 Cantidad</h4>
+                    <div class="value">{movimiento['cantidad']}</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            if calidad_ok:
+                st.markdown("""
+                    <div class="sidebar-card success">
+                        <h4>✅ Calidad</h4>
+                        <p>Verificada</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                    <div class="sidebar-card warning">
+                        <h4>⚠️ Calidad</h4>
+                        <p>Por verificar</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
 with tab2:
-    st.markdown('<div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);">', unsafe_allow_html=True)
-    st.subheader("Historial de Inspecciones")
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📋 Historial de Inspecciones</div>', unsafe_allow_html=True)
     
     recent = get_recent_movements(30)
     if recent:
         # Filtrar solo entradas
         entradas = [m for m in recent if m['tipo'] == 'ENTRADA']
         if entradas:
-            df = pd.DataFrame([dict(row) for row in entradas])
-            df = df[['id', 'tipo', 'referencia', 'cantidad', 'estado', 'fecha_movimiento']]
-            df.columns = ['ID', 'Tipo', 'Referencia', 'Cantidad', 'Estado', 'Fecha']
-            
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            for entrada in entradas:
+                estado_class = ""
+                estado_icon = ""
+                
+                if entrada['estado'] == 'APROBADO':
+                    estado_class = "status-approved"
+                    estado_icon = "✅"
+                elif entrada['estado'] == 'RECHAZADO':
+                    estado_class = "status-rejected"
+                    estado_icon = "❌"
+                elif entrada['estado'] == 'PENDIENTE':
+                    estado_class = "status-pending"
+                    estado_icon = "⏳"
+                
+                st.markdown(f"""
+                    <div class="movement-card approved">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <h4 style="margin: 0; color: #1f2937;">Ref: {entrada['referencia']}</h4>
+                                <p style="margin: 0.25rem 0 0 0; color: #6b7280; font-size: 0.9rem;">ID: {entrada['id']}</p>
+                            </div>
+                            <span class="status-badge {estado_class}">{estado_icon} {entrada['estado']}</span>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-item">
+                                <div class="info-item-label">Cantidad Inspeccionada</div>
+                                <div class="info-item-value">{entrada['cantidad']}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-item-label">Fecha de Inspección</div>
+                                <div class="info-item-value" style="font-size: 1rem;">{entrada['fecha_movimiento']}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-item-label">Estado</div>
+                                <div class="info-item-value" style="font-size: 1rem;">{entrada['estado']}</div>
+                            </div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
         else:
-            alert_info("No hay inspecciones registradas.")
+            st.markdown('<div class="badge-info">ℹ️ No hay inspecciones registradas.</div>', unsafe_allow_html=True)
     else:
-        alert_info("No hay movimientos registrados aún.")
+        st.markdown('<div class="badge-info">ℹ️ No hay movimientos registrados aún.</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with tab3:
-    st.markdown('<div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);"></div>', unsafe_allow_html=True)
-    st.subheader("📊 Anomalías Registradas")
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📊 Anomalías Registradas</div>', unsafe_allow_html=True)
     
-    st.info("Este tab mostrará un resumen de todas las anomalías detectadas durante las inspecciones")
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid #3b82f6; margin-bottom: 1.5rem;">
+            <p style="margin: 0; color: #1e40af; font-weight: 600;">
+                📊 Este tab mostrará un resumen de todas las anomalías detectadas durante las inspecciones
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 2rem; border-radius: 1rem; border: 2px solid #10b981; text-align: center;">
+            <h3 style="color: #166534; margin: 0;">✅ Sistema en desarrollo</h3>
+            <p style="color: #166534; margin: 1rem 0 0 0; font-size: 1.1rem;">
+                Los datos se poblarán automáticamente cuando se registren anomalías en las inspecciones
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
