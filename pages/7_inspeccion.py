@@ -12,11 +12,19 @@ from services.location_service import get_location_by_id
 from services.movement_service import (
     get_pending_movements, update_movement_status, update_inventory, get_recent_movements
 )
+from services.inspection_service import create_anomaly, get_anomalies_by_movement
+from services.provider_service import get_provider_by_id
+import os
+from datetime import datetime
 
 require_auth()
 require_permission("recepcion", "leer")
 
 render_sidebar(current_page="inspeccion")
+
+# Crear carpeta para almacenar fotos de anomalías
+ANOMALIAS_FOLDER = "anomalias_evidencia"
+os.makedirs(ANOMALIAS_FOLDER, exist_ok=True)
 
 # Título de la página
 st.markdown("""
@@ -27,10 +35,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Tabs
-tab1, tab2 = st.tabs(["⚠️ Pendientes", "📋 Historial"])
+tab1, tab2, tab3 = st.tabs(["⚠️ Pendientes", "📋 Historial", "📊 Anomalías"])
 
 with tab1:
     pending = get_pending_movements()
+    # Filtrar solo entradas
+    pending = [m for m in pending if m['tipo'] == 'ENTRADA']
+    
     if not pending:
         st.markdown('<div style="background: white; padding: 3rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); text-align: center;">', unsafe_allow_html=True)
         alert_info("🎉 No hay movimientos pendientes de inspección!")
@@ -80,14 +91,87 @@ with tab1:
                 st.markdown("### ✅ Verificación de Calidad")
                 calidad_ok = st.checkbox("Calidad verificada y conforme", value=False)
                 
-                tiene_anomalias = st.checkbox("Presenta anomalías", value=False)
-                descripcion_anomalias = ""
-                if tiene_anomalias:
-                    descripcion_anomalias = st.text_area("Descripción de anomalías")
+                cantidad_conforme = st.number_input(
+                    "Cantidad conforme (Cumple especificaciones)", 
+                    min_value=0, 
+                    max_value=movimiento['cantidad'],
+                    value=movimiento['cantidad']
+                )
                 
                 st.markdown("<hr style='border: 1px solid #e2e8f0; margin: 1.5rem 0;'>", unsafe_allow_html=True)
                 
-                decision = st.radio("### 📝 Decisión Final", ["✅ Autorizar Entrada", "❌ Rechazar Entrada"], index=0)
+                st.markdown("### ⚠️ Registro de Anomalías")
+                tiene_anomalias = st.checkbox("Presenta anomalías", value=False)
+                
+                anomalias_registradas = []
+                
+                if tiene_anomalias:
+                    # Formulario de anomalías
+                    col_anom1, col_anom2 = st.columns(2)
+                    
+                    with col_anom1:
+                        tipo_anomalia = st.selectbox(
+                            "Tipo de Anomalía",
+                            ["Daño Físico", "Oxidación", "Vencido", "Falta de Cantidad", "Otro"]
+                        )
+                        cantidad_danada = st.number_input(
+                            "Cantidad de productos dañados",
+                            min_value=0,
+                            max_value=movimiento['cantidad'],
+                            value=0
+                        )
+                    
+                    with col_anom2:
+                        severidad = st.select_slider(
+                            "Severidad de la anomalía",
+                            ["Leve", "Moderado", "Grave"],
+                            value="Moderado"
+                        )
+                    
+                    descripcion_anomalias = st.text_area(
+                        "Descripción detallada de la anomalía",
+                        placeholder="Describe qué pasó, cómo, dónde..."
+                    )
+                    
+                    # Upload de foto
+                    foto_uploaded = st.file_uploader(
+                        "📸 Subir foto de evidencia",
+                        type=["jpg", "jpeg", "png"],
+                        key=f"foto_anomalia_{mov_id}"
+                    )
+                    
+                    foto_path = None
+                    if foto_uploaded:
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        filename = f"anomalia_{mov_id}_{timestamp}_{foto_uploaded.name}"
+                        filepath = os.path.join(ANOMALIAS_FOLDER, filename)
+                        
+                        with open(filepath, "wb") as f:
+                            f.write(foto_uploaded.getbuffer())
+                        
+                        foto_path = filepath
+                        st.success(f"✅ Foto guardada: {filename}")
+                    
+                    if st.button("➕ Registrar esta anomalía", use_container_width=True):
+                        if cantidad_danada > 0 or descripcion_anomalias:
+                            anomalias_registradas.append({
+                                "tipo": tipo_anomalia,
+                                "cantidad": cantidad_danada,
+                                "severidad": severidad,
+                                "descripcion": descripcion_anomalias,
+                                "foto": foto_path
+                            })
+                            alert_success("✅ Anomalía registrada!")
+                        else:
+                            alert_warning("⚠️ Ingresa una cantidad o descripción")
+                
+                st.markdown("<hr style='border: 1px solid #e2e8f0; margin: 1.5rem 0;'>", unsafe_allow_html=True)
+                
+                decision = st.radio(
+                    "### 📝 Decisión Final", 
+                    ["✅ Autorizar Entrada", "❌ Rechazar Entrada"],
+                    index=0
+                )
                 
                 observaciones_finales = st.text_area("Observaciones de inspección (opcional)")
                 
@@ -95,7 +179,7 @@ with tab1:
                 
                 col_izq, col_der = st.columns(2)
                 with col_izq:
-                    if st.button("Confirmar", type="primary", use_container_width=True):
+                    if st.button("✅ Confirmar Inspección", type="primary", use_container_width=True):
                         try:
                             if not calidad_ok and decision == "✅ Autorizar Entrada":
                                 alert_error("Primero verifica la calidad del producto!")
@@ -109,17 +193,34 @@ with tab1:
                                 obs_completas = []
                                 if observaciones_finales:
                                     obs_completas.append(observaciones_finales)
-                                if tiene_anomalias and descripcion_anomalias:
-                                    obs_completas.append(f"Anomalías: {descripcion_anomalias}")
+                                
+                                # Registrar anomalías en BD
+                                if tiene_anomalias:
+                                    # Obtener anomalías previas del movimiento
+                                    anomalias_previas = get_anomalies_by_movement(mov_id)
+                                    
+                                    # Agregar nuevas anomalías
+                                    for anom in anomalias_registradas:
+                                        create_anomaly(
+                                            movimiento_id=mov_id,
+                                            tipo_anomalia=anom['tipo'],
+                                            cantidad_danada=anom['cantidad'],
+                                            severidad=anom['severidad'],
+                                            descripcion=anom['descripcion'],
+                                            foto_path=anom['foto'] or ""
+                                        )
+                                        obs_completas.append(f"Anomalía: {anom['tipo']} (Severidad: {anom['severidad']}, Cantidad: {anom['cantidad']})")
                                 
                                 if decision == "✅ Autorizar Entrada":
-                                    update_inventory(
-                                        producto_id=producto['id'],
-                                        ubicacion_id=ubicacion_dest['id'],
-                                        cantidad=movimiento['cantidad'],
-                                        lote=lote,
-                                        fecha_vencimiento=fecha_vencimiento
-                                    )
+                                    # Actualizar inventario con cantidad conforme
+                                    if cantidad_conforme > 0:
+                                        update_inventory(
+                                            product_id=producto['id'],
+                                            ubicacion_id=ubicacion_dest['id'],
+                                            cantidad=cantidad_conforme,
+                                            lote=lote,
+                                            fecha_vencimiento=fecha_vencimiento
+                                        )
                                     update_movement_status(
                                         movement_id=mov_id,
                                         nuevo_estado="APROBADO",
@@ -147,13 +248,26 @@ with tab2:
     st.markdown('<div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);">', unsafe_allow_html=True)
     st.subheader("Historial de Inspecciones")
     
-    recent = get_recent_movements(20)
+    recent = get_recent_movements(30)
     if recent:
-        df = pd.DataFrame([dict(row) for row in recent])
-        df = df[['id', 'tipo', 'referencia', 'cantidad', 'estado', 'fecha_movimiento']]
-        df.columns = ['ID', 'Tipo', 'Referencia', 'Cantidad', 'Estado', 'Fecha']
-        
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        # Filtrar solo entradas
+        entradas = [m for m in recent if m['tipo'] == 'ENTRADA']
+        if entradas:
+            df = pd.DataFrame([dict(row) for row in entradas])
+            df = df[['id', 'tipo', 'referencia', 'cantidad', 'estado', 'fecha_movimiento']]
+            df.columns = ['ID', 'Tipo', 'Referencia', 'Cantidad', 'Estado', 'Fecha']
+            
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            alert_info("No hay inspecciones registradas.")
     else:
         alert_info("No hay movimientos registrados aún.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with tab3:
+    st.markdown('<div style="background: white; padding: 2rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);"></div>', unsafe_allow_html=True)
+    st.subheader("📊 Anomalías Registradas")
+    
+    st.info("Este tab mostrará un resumen de todas las anomalías detectadas durante las inspecciones")
+    
     st.markdown('</div>', unsafe_allow_html=True)

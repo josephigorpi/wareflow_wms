@@ -17,22 +17,18 @@ def get_pending_movements():
     return fetch_all("SELECT * FROM movimientos WHERE estado = 'PENDIENTE' ORDER BY fecha_movimiento DESC")
 
 
-def create_movement(tipo, producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, referencia="", observaciones=""):
-    now = datetime.now().isoformat()
+def create_movement(tipo, producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, referencia="", observaciones="", proveedor_id=None, orden_compra_id=None, fecha_movimiento=None):
+    if fecha_movimiento is None:
+        fecha_movimiento = datetime.now().isoformat()
     user_id = st.session_state.get("user_id")
-    data = {
-        "tipo": tipo,
-        "producto_id": producto_id,
-        "ubicacion_origen_id": ubicacion_origen_id,
-        "ubicacion_destino_id": ubicacion_destino_id,
-        "cantidad": cantidad,
-        "referencia": referencia,
-        "observaciones": observaciones,
-        "estado": "PENDIENTE",
-        "usuario_id": user_id,
-        "fecha_movimiento": now
-    }
-    return insert("movimientos", data)
+    
+    query = """
+        INSERT INTO movimientos 
+        (tipo, producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, referencia, observaciones, estado, usuario_id, fecha_movimiento, proveedor_id, orden_compra_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    params = (tipo, producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, referencia, observaciones, "PENDIENTE", user_id, fecha_movimiento, proveedor_id, orden_compra_id)
+    return insert(query, params)
 
 
 def update_movement_status(movement_id, nuevo_estado, observaciones=""):
