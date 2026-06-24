@@ -34,6 +34,11 @@ tab1, tab2 = st.tabs(["➕ Nueva Entrada", "📋 Historial"])
 
 # --- Tab 1: Nueva Entrada ---
 with tab1:
+    # Inicializar variables
+    orden_compra = None
+    oc_id = None
+    proveedor_id = None
+    
     # Layout de dos columnas
     col_main, col_sidebar = st.columns([2, 0.95])
     
