@@ -28,6 +28,7 @@ def render_sidebar(current_page: str = "") -> None:
         ("inventario", "Inventario"),
         ("ubicacion", "Ubicación"),
         ("picking", "Picking"),
+        ("despacho", "Despacho"),
         ("reportes", "Reportes"),
     ]
 
@@ -38,6 +39,7 @@ def render_sidebar(current_page: str = "") -> None:
         "Inventario": "3_inventario",
         "Ubicación": "4_ubicacion",
         "Picking": "5_picking",
+        "Despacho": "8_despacho",
         "Reportes": "6_reportes",
     }
 

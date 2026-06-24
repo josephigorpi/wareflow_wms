@@ -14,3 +14,5 @@ render_sidebar(current_page="inventario")
 render_navbar(titulo="Control de Inventario", icono="📋")
 
 st.write("Contenido del módulo de control de inventario")
+
+moreno
