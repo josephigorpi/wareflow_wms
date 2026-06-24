@@ -7,6 +7,7 @@ ROLES_PERMISSIONS = {
         "inventario": ["leer", "escribir"],
         "ubicacion": ["leer", "escribir"],
         "picking": ["leer", "escribir"],
+        "despacho": ["leer", "escribir"],
         "reportes": ["leer", "escribir"],
         "admin": ["leer", "escribir"],
     },
@@ -16,6 +17,7 @@ ROLES_PERMISSIONS = {
         "inventario": ["leer", "escribir"],
         "ubicacion": ["leer", "escribir"],
         "picking": ["leer", "escribir"],
+        "despacho": ["leer", "escribir"],
         "reportes": ["leer"],
     },
     "Operador Almacén": {
@@ -24,6 +26,7 @@ ROLES_PERMISSIONS = {
         "inventario": ["leer", "escribir"],
         "ubicacion": ["leer", "escribir"],
         "picking": ["leer", "escribir"],
+        "despacho": ["leer", "escribir"],
     },
     "Auditor": {
         "dashboard": ["leer"],
