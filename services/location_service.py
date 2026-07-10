@@ -53,7 +53,7 @@ def get_location_occupation_by_zone():
         GROUP BY z.id, z.nombre
     """)
     return cursor.fetchall()
-=======
+
 def get_all_zones():
     """Obtiene todas las zonas activas.
     
