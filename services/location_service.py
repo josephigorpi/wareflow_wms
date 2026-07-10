@@ -1,5 +1,6 @@
 """Lógica de negocio de ubicaciones para WareFlow WMS."""
 
+from database.connection import get_connection
 from database.db_manager import fetch_all, fetch_one, insert, update, delete
 
 def get_all_locations():
