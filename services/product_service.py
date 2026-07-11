@@ -8,7 +8,9 @@ def get_all_products():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM productos WHERE activo = 1")
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def get_products_with_inventory():
@@ -21,7 +23,9 @@ def get_products_with_inventory():
         WHERE p.activo = 1
         GROUP BY p.id
     """)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def get_products_low_stock():
@@ -35,7 +39,9 @@ def get_products_low_stock():
         GROUP BY p.id
         HAVING stock_total <= p.stock_minimo
     """)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def get_products_high_stock():
@@ -49,14 +55,18 @@ def get_products_high_stock():
         GROUP BY p.id
         HAVING stock_total >= p.stock_maximo
     """)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def count_active_products():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM productos WHERE activo = 1")
-    return cursor.fetchone()[0]
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
 
 
 def search_products(query: str):
@@ -69,7 +79,9 @@ def search_products(query: str):
         WHERE p.activo = 1 AND (p.sku LIKE ? OR p.nombre LIKE ?)
         GROUP BY p.id
     """, (f"%{query}%", f"%{query}%"))
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def count_low_stock_products():
@@ -95,7 +107,9 @@ def get_expiring_products(days: int = 30):
         AND p.activo = 1
         ORDER BY i.fecha_vencimiento
     """, (today, future_date))
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def count_expiring_products(days: int = 30):
@@ -103,28 +117,15 @@ def count_expiring_products(days: int = 30):
 
 
 def get_product_by_sku(sku: str):
-    """
-    Obtiene un producto por su SKU.
-    
-    Args:
-        sku (str): El SKU del producto a buscar
-        
-    Returns:
-        dict or None: El producto encontrado o None si no existe
-    """
+    """Obtiene un producto por su SKU."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT p.*, 
-               c.nombre as categoria_nombre,
-               COALESCE(SUM(i.cantidad), 0) as stock_total
+        SELECT p.*, c.nombre as categoria_nombre
         FROM productos p
         LEFT JOIN categorias_producto c ON p.categoria_id = c.id
-        LEFT JOIN inventario i ON p.id = i.producto_id
         WHERE p.sku = ? AND p.activo = 1
-        GROUP BY p.id
     """, (sku,))
-    
     result = cursor.fetchone()
     conn.close()
-    return result
+    return dict(result) if result else None
