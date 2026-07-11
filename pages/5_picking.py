@@ -10,7 +10,7 @@ from components.navbar import render_navbar
 from components.forms import input_text, input_number, input_select, form_submit_button
 from components.tables import render_table
 from components.alerts import alert_success, alert_error, alert_info
-from services.product_service import get_all_products, get_inventory, get_product_by_sku
+from services.product_service import get_all_products, get_product_by_sku
 from services.location_service import get_all_locations
 from services.movement_service import (
     get_movements_by_type, create_picking_order, process_picking
