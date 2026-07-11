@@ -7,7 +7,9 @@ def get_all_locations():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM ubicaciones WHERE activo = 1")
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def get_locations_with_zones():
@@ -19,7 +21,9 @@ def get_locations_with_zones():
         LEFT JOIN zonas z ON u.zona_id = z.id
         WHERE u.activo = 1
     """)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
 
 
 def count_locations_by_status():
@@ -29,6 +33,7 @@ def count_locations_by_status():
     total = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM ubicaciones WHERE activo = 1 AND ocupada = 1")
     occupied = cursor.fetchone()[0]
+    conn.close()
     free = total - occupied
     return {"total": total, "ocupadas": occupied, "libres": free}
 
@@ -37,7 +42,9 @@ def count_free_locations():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM ubicaciones WHERE activo = 1 AND ocupada = 0")
-    return cursor.fetchone()[0]
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
 
 
 def get_location_occupation_by_zone():
@@ -53,7 +60,10 @@ def get_location_occupation_by_zone():
         WHERE u.activo = 1
         GROUP BY z.id, z.nombre
     """)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results] if results else []
+
 
 def get_all_zones():
     """Obtiene todas las zonas activas.
@@ -301,7 +311,7 @@ def get_available_locations():
     """)
     results = cursor.fetchall()
     conn.close()
-    return results
+    return [dict(row) for row in results] if results else []
 
 
 def get_available_locations_with_capacity(producto_id: int = None):
@@ -340,7 +350,7 @@ def get_available_locations_with_capacity(producto_id: int = None):
     cursor.execute(query, params)
     results = cursor.fetchall()
     conn.close()
-    return results
+    return [dict(row) for row in results] if results else []
 
 
 def get_available_locations_by_zone(zona_id: int):
@@ -363,7 +373,7 @@ def get_available_locations_by_zone(zona_id: int):
     """, (zona_id,))
     results = cursor.fetchall()
     conn.close()
-    return results
+    return [dict(row) for row in results] if results else []
 
 
 def mark_location_occupied(location_id: int, occupied: bool = True):
@@ -418,6 +428,8 @@ def get_location_occupancy_details(location_id: int):
         conn.close()
         return None
     
+    location_dict = dict(location)
+    
     # Obtener productos en esta ubicación
     cursor.execute("""
         SELECT i.*, p.sku, p.nombre as producto_nombre
@@ -426,12 +438,13 @@ def get_location_occupancy_details(location_id: int):
         WHERE i.ubicacion_id = ? AND i.cantidad > 0
     """, (location_id,))
     products = cursor.fetchall()
+    products_dict = [dict(row) for row in products] if products else []
     
     conn.close()
     
     return {
-        "location": location,
-        "products": products,
-        "total_products": len(products),
-        "total_units": sum(p['cantidad'] for p in products) if products else 0
+        "location": location_dict,
+        "products": products_dict,
+        "total_products": len(products_dict),
+        "total_units": sum(p['cantidad'] for p in products_dict) if products_dict else 0
     }
