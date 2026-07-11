@@ -20,15 +20,15 @@ INSERT OR IGNORE INTO usuarios (nombre_completo, username, password_hash, email,
 
 -- Contraseña: supervisor123
 INSERT OR IGNORE INTO usuarios (nombre_completo, username, password_hash, email, rol_id, activo, creado_en) VALUES
-  ('Supervisor Almacén', 'supervisor', '100000$14bbeaeeb16213e052cd2bd174aa5d2d$13b86091e13db2d641e615ee532bd467ef6ee9686f4041d2e394b36c53956ea5', 'supervisor@wareflow.com', 2, 1, datetime('now'));
+  ('Supervisor Almacén', 'supervisor', '100000$8219308316e833f7a6659873f0f08539$8a5e001c9b3082c3987c711941c6fdb6971fb4990fcb843a6c48e6242040c058', 'supervisor@wareflow.com', 2, 1, datetime('now'));
 
 -- Contraseña: operador123
 INSERT OR IGNORE INTO usuarios (nombre_completo, username, password_hash, email, rol_id, activo, creado_en) VALUES
-  ('Operador Almacén 1', 'operador1', '100000$a4bd60b288f0b7a6512718282b19a705$b361c1bcc8c7cfceeed6e4e3fafea0c882c0124664003d29729f5046f0479f73', 'operador1@wareflow.com', 3, 1, datetime('now'));
+  ('Operador Almacén 1', 'operador1', '100000$e91e1cd2d14926f453988bf5d05f00c9$1c67f10a741829bb72489769c90d2a54a16db97e0e1b113966f02387e0115297', 'operador1@wareflow.com', 3, 1, datetime('now'));
 
 -- Contraseña: auditor123
 INSERT OR IGNORE INTO usuarios (nombre_completo, username, password_hash, email, rol_id, activo, creado_en) VALUES
-  ('Auditor Inventario', 'auditor', '100000$fc026932ba425a4412893c45e84066f1$d2e9dedcb6311ea0e9505b1e54a82a3ee11aa1418503a220b1df3c33ae8851d1', 'auditor@wareflow.com', 4, 1, datetime('now'));
+  ('Auditor Inventario', 'auditor', '100000$0d864517c2b4a655feacfbdb7ad54d01$e4cab3813ec57798ace06d7e9ada0d554289452dbec13707c132ffce33f1b41c', 'auditor@wareflow.com', 4, 1, datetime('now'));
 
 -- ============================================
 -- 3. CATEGORIAS DE PRODUCTOS
