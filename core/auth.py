@@ -12,27 +12,43 @@ from utils.passwords import verify_password
 
 
 def login(username: str, password: str) -> bool:
+    """
+    Autentica a un usuario en el sistema.
+    
+    Args:
+        username (str): Nombre de usuario
+        password (str): Contraseña del usuario
+        
+    Returns:
+        bool: True si la autenticación fue exitosa, False en caso contrario
+    """
     init_session()
+
+    # Validar que los campos no estén vacíos
+    if not username or not password:
+        return False
 
     user = get_user_by_username(username)
     if not user:
         return False
 
-    password_hash = user["password_hash"]
-    if not verify_password(password, password_hash):
+    password_hash = user.get("password_hash")
+    if not password_hash or not verify_password(password, password_hash):
         return False
 
     if user.get("activo") != 1:
         return False
 
+    # Establecer sesión
     st.session_state["autenticado"] = True
     st.session_state["user_id"] = user["id"]
     st.session_state["username"] = user["username"]
-    st.session_state["nombre_completo"] = user.get("nombre_completo")
+    st.session_state["nombre_completo"] = user.get("nombre_completo", username)
     st.session_state["rol_id"] = user.get("rol_id")
     st.session_state["rol_nombre"] = user.get("rol_nombre") or ""
     st.session_state["permisos"] = load_permissions(st.session_state["rol_nombre"])
 
+    # Registrar último acceso
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -41,8 +57,10 @@ def login(username: str, password: str) -> bool:
             (datetime.datetime.utcnow().isoformat(), user["id"]),
         )
         conn.commit()
-    except Exception:
-        pass
+        conn.close()
+    except Exception as e:
+        # Log del error pero no interrumpir el flujo
+        print(f"Error al actualizar último acceso: {e}")
 
     return True
 
