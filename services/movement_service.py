@@ -302,3 +302,134 @@ def process_picking(movimiento_id: int, usuario_id: int = None):
         return False, f"Error al procesar el picking: {str(e)}"
     finally:
         conn.close()
+
+
+def create_despacho(movement_ids: list, referencia: str = None, observaciones: str = None, usuario_id: int = None):
+    """
+    Crea un despacho a partir de una lista de movimientos de picking completados.
+    
+    Args:
+        movement_ids (list): Lista de IDs de movimientos de picking a consolidar
+        referencia (str, optional): Referencia del despacho
+        observaciones (str, optional): Observaciones adicionales
+        usuario_id (int, optional): ID del usuario que crea el despacho
+        
+    Returns:
+        int: ID del movimiento de despacho creado
+        
+    Raises:
+        ValueError: Si no se proporcionan movement_ids
+        ValueError: Si algún movimiento no existe o no está en estado COMPLETADO
+        ValueError: Si algún movimiento ya fue despachado
+    """
+    if not movement_ids:
+        raise ValueError("Debe seleccionar al menos un movimiento para despachar")
+    
+    if not isinstance(movement_ids, list):
+        movement_ids = [movement_ids]
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Verificar que todos los movimientos existan y estén en estado COMPLETADO
+        placeholders = ','.join('?' * len(movement_ids))
+        cursor.execute(f"""
+            SELECT m.*, p.sku, p.nombre as producto_nombre
+            FROM movimientos m
+            JOIN productos p ON m.producto_id = p.id
+            WHERE m.id IN ({placeholders})
+        """, movement_ids)
+        
+        movimientos = cursor.fetchall()
+        
+        if len(movimientos) != len(movement_ids):
+            found_ids = [m['id'] for m in movimientos]
+            missing_ids = [id for id in movement_ids if id not in found_ids]
+            raise ValueError(f"Movimientos no encontrados: {missing_ids}")
+        
+        # Verificar que todos estén en estado COMPLETADO y no despachados
+        for movimiento in movimientos:
+            if movimiento['estado'] != 'COMPLETADO':
+                raise ValueError(f"El movimiento #{movimiento['id']} no está completado. Estado actual: {movimiento['estado']}")
+            
+            # Verificar si ya fue despachado (buscando un movimiento de DESPACHO relacionado)
+            cursor.execute("""
+                SELECT COUNT(*) as count
+                FROM movimientos
+                WHERE tipo = 'DESPACHO' 
+                AND referencia = ?
+            """, (f"PICKING-{movimiento['id']}",))
+            
+            if cursor.fetchone()['count'] > 0:
+                raise ValueError(f"El movimiento #{movimiento['id']} ya fue despachado")
+        
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Crear el movimiento de despacho consolidado
+        # Agrupar todos los productos y cantidades para el despacho
+        productos = {}
+        detalles = []
+        
+        for movimiento in movimientos:
+            key = movimiento['producto_id']
+            if key in productos:
+                productos[key]['cantidad'] += movimiento['cantidad']
+            else:
+                productos[key] = {
+                    'producto_id': movimiento['producto_id'],
+                    'sku': movimiento['sku'],
+                    'producto_nombre': movimiento['producto_nombre'],
+                    'cantidad': movimiento['cantidad'],
+                    'movimiento_id': movimiento['id']
+                }
+            
+            detalles.append(f"Picking #{movimiento['id']}: {movimiento['sku']} x {movimiento['cantidad']}")
+        
+        # Crear el registro de despacho
+        referencia_despacho = referencia or f"DESPACHO-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        observaciones_despacho = observaciones or ""
+        
+        # Agregar detalles de los pickings consolidados a las observaciones
+        observaciones_completa = f"{observaciones_despacho}\n\nPedidos consolidados:\n" + "\n".join(detalles)
+        
+        # Como el despacho puede incluir múltiples productos, creamos un movimiento por cada producto
+        # o podemos crear un solo movimiento con un producto "consolidado"
+        # Voy a crear un solo movimiento con el primer producto como referencia
+        primer_producto = list(productos.values())[0]
+        
+        cursor.execute("""
+            INSERT INTO movimientos (
+                tipo, producto_id, cantidad, referencia, observaciones, 
+                estado, usuario_id, fecha_movimiento
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            'DESPACHO',
+            primer_producto['producto_id'],
+            sum(p['cantidad'] for p in productos.values()),  # Cantidad total
+            referencia_despacho,
+            observaciones_completa,
+            'COMPLETADO',  # Los despachos se crean directamente como COMPLETADOS
+            usuario_id,
+            now
+        ))
+        
+        despacho_id = cursor.lastrowid
+        
+        # Actualizar los movimientos de picking para marcar que fueron despachados
+        # Podríamos agregar un campo o actualizar la referencia
+        for movimiento in movimientos:
+            cursor.execute("""
+                UPDATE movimientos 
+                SET observaciones = COALESCE(observaciones || ' ', '') || '| Despachado en DESPACHO-' || ?
+                WHERE id = ?
+            """, (despacho_id, movimiento['id']))
+        
+        conn.commit()
+        return despacho_id
+        
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
