@@ -642,19 +642,25 @@ def get_recepciones_recientes(limit: int = 50):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT m.*, 
+        SELECT m.id, m.tipo, m.producto_id, m.ubicacion_origen_id, m.ubicacion_destino_id, 
+               m.cantidad, m.referencia, m.observaciones, m.estado, m.usuario_id, 
+               m.fecha_movimiento,
                p.sku, p.nombre as producto_nombre,
                u.username as usuario_nombre,
-               ud.codigo as destino_codigo
+               ud.codigo as destino_codigo,
+               uo.codigo as origen_codigo
         FROM movimientos m
         LEFT JOIN productos p ON m.producto_id = p.id
         LEFT JOIN usuarios u ON m.usuario_id = u.id
         LEFT JOIN ubicaciones ud ON m.ubicacion_destino_id = ud.id
+        LEFT JOIN ubicaciones uo ON m.ubicacion_origen_id = uo.id
         WHERE m.tipo = 'ENTRADA'
         ORDER BY m.fecha_movimiento DESC
         LIMIT ?
     """, (limit,))
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return results
 
 
 def get_recepciones_pendientes():
@@ -668,7 +674,9 @@ def get_recepciones_pendientes():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT m.*, 
+        SELECT m.id, m.tipo, m.producto_id, m.ubicacion_origen_id, m.ubicacion_destino_id, 
+               m.cantidad, m.referencia, m.observaciones, m.estado, m.usuario_id, 
+               m.fecha_movimiento,
                p.sku, p.nombre as producto_nombre,
                u.username as usuario_nombre
         FROM movimientos m
@@ -678,7 +686,9 @@ def get_recepciones_pendientes():
         AND m.ubicacion_destino_id IS NULL
         ORDER BY m.fecha_movimiento DESC
     """)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    conn.close()
+    return results
 
 
 def update_recepcion_with_inspection(movimiento_id: int, ubicacion_id: int, 
