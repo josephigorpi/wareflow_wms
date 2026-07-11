@@ -60,7 +60,8 @@ def logout() -> None:
     # Redireccionar a la página de login usando query parameters
     # Opción 1: Usar st.switch_page (Streamlit 1.36.0+)
     try:
-        st.switch_page("app.py")
+        #st.switch_page("app.py")
+        st.switch_page("pages/0_login.py")
     except AttributeError:
         # Opción 2: Fallback para versiones anteriores
         st.markdown(
