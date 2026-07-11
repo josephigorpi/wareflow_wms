@@ -282,3 +282,156 @@ def delete_location(location_id):
     # Eliminar ubicación
     rows_deleted = delete("ubicaciones", "id = ?", (location_id,))
     return rows_deleted
+
+
+def get_available_locations():
+    """Obtiene todas las ubicaciones disponibles (no ocupadas) con sus zonas.
+    
+    Returns:
+        list: Lista de diccionarios con ubicaciones disponibles, o lista vacía.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.*, z.nombre as zona_nombre, z.codigo as zona_codigo
+        FROM ubicaciones u
+        LEFT JOIN zonas z ON u.zona_id = z.id
+        WHERE u.activo = 1 AND u.ocupada = 0
+        ORDER BY u.codigo
+    """)
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+
+def get_available_locations_with_capacity(producto_id: int = None):
+    """Obtiene ubicaciones disponibles con información de capacidad.
+    
+    Args:
+        producto_id (int, optional): Si se proporciona, filtra ubicaciones 
+                                     que puedan almacenar el producto.
+    
+    Returns:
+        list: Lista de diccionarios con ubicaciones disponibles y capacidad.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = """
+        SELECT u.*, z.nombre as zona_nombre, z.codigo as zona_codigo,
+               COALESCE(SUM(i.cantidad), 0) as stock_actual
+        FROM ubicaciones u
+        LEFT JOIN zonas z ON u.zona_id = z.id
+        LEFT JOIN inventario i ON u.id = i.ubicacion_id
+        WHERE u.activo = 1 AND u.ocupada = 0
+    """
+    
+    params = []
+    
+    if producto_id:
+        query += " AND (u.id NOT IN (SELECT ubicacion_id FROM inventario WHERE producto_id != ?) OR u.id NOT IN (SELECT ubicacion_id FROM inventario))"
+        params.append(producto_id)
+    
+    query += """ 
+        GROUP BY u.id
+        ORDER BY stock_actual ASC, u.codigo
+    """
+    
+    cursor.execute(query, params)
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+
+def get_available_locations_by_zone(zona_id: int):
+    """Obtiene ubicaciones disponibles en una zona específica.
+    
+    Args:
+        zona_id (int): ID de la zona.
+    
+    Returns:
+        list: Lista de diccionarios con ubicaciones disponibles en la zona.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.*, z.nombre as zona_nombre, z.codigo as zona_codigo
+        FROM ubicaciones u
+        LEFT JOIN zonas z ON u.zona_id = z.id
+        WHERE u.activo = 1 AND u.ocupada = 0 AND u.zona_id = ?
+        ORDER BY u.codigo
+    """, (zona_id,))
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+
+def mark_location_occupied(location_id: int, occupied: bool = True):
+    """Marca una ubicación como ocupada o libre.
+    
+    Args:
+        location_id (int): ID de la ubicación.
+        occupied (bool): True para marcar como ocupada, False para libre.
+    
+    Returns:
+        bool: True si se actualizó correctamente, False en caso contrario.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE ubicaciones 
+            SET ocupada = ? 
+            WHERE id = ?
+        """, (1 if occupied else 0, location_id))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+
+def get_location_occupancy_details(location_id: int):
+    """Obtiene detalles de ocupación de una ubicación específica.
+    
+    Args:
+        location_id (int): ID de la ubicación.
+    
+    Returns:
+        dict: Detalles de ocupación incluyendo productos y cantidades.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Obtener información de la ubicación
+    cursor.execute("""
+        SELECT u.*, z.nombre as zona_nombre
+        FROM ubicaciones u
+        LEFT JOIN zonas z ON u.zona_id = z.id
+        WHERE u.id = ?
+    """, (location_id,))
+    location = cursor.fetchone()
+    
+    if not location:
+        conn.close()
+        return None
+    
+    # Obtener productos en esta ubicación
+    cursor.execute("""
+        SELECT i.*, p.sku, p.nombre as producto_nombre
+        FROM inventario i
+        JOIN productos p ON i.producto_id = p.id
+        WHERE i.ubicacion_id = ? AND i.cantidad > 0
+    """, (location_id,))
+    products = cursor.fetchall()
+    
+    conn.close()
+    
+    return {
+        "location": location,
+        "products": products,
+        "total_products": len(products),
+        "total_units": sum(p['cantidad'] for p in products) if products else 0
+    }
