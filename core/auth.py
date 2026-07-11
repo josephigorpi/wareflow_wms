@@ -48,7 +48,41 @@ def login(username: str, password: str) -> bool:
 
 
 def logout() -> None:
+    """
+    Cierra la sesión del usuario actual y redirecciona al login.
+    """
+    # Limpiar el estado de sesión
     reset_session()
+    
+    # Mostrar mensaje de éxito
+    st.success("✅ Sesión cerrada exitosamente")
+    
+    # Redireccionar a la página de login usando query parameters
+    # Opción 1: Usar st.switch_page (Streamlit 1.36.0+)
+    try:
+        st.switch_page("app.py")
+    except AttributeError:
+        # Opción 2: Fallback para versiones anteriores
+        st.markdown(
+            """
+            <meta http-equiv="refresh" content="1; url=/" />
+            <script>
+                window.location.href = "/";
+            </script>
+            """,
+            unsafe_allow_html=True
+        )
+        st.info("Redirigiendo al login...")
+        st.stop()
+
+
+def logout_simple() -> None:
+    """
+    Versión simple de logout sin redirección automática.
+    Útil cuando se quiere controlar la redirección desde la UI.
+    """
+    reset_session()
+    st.success("✅ Sesión cerrada exitosamente")
 
 
 def is_authenticated() -> bool:
