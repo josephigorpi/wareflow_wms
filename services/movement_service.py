@@ -637,7 +637,7 @@ def get_recepciones_recientes(limit: int = 50):
         limit (int): Límite de registros
         
     Returns:
-        list: Lista de recepciones
+        list: Lista de recepciones como diccionarios
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -658,18 +658,19 @@ def get_recepciones_recientes(limit: int = 50):
         ORDER BY m.fecha_movimiento DESC
         LIMIT ?
     """, (limit,))
+    
     results = cursor.fetchall()
     conn.close()
-    return results
-
+    
+    # Convertir los objetos Row a diccionarios
+    return [dict(row) for row in results] if results else []
 
 def get_recepciones_pendientes():
     """
     Obtiene las recepciones pendientes de inspección.
-    Para simplificar, consideramos pendientes las recepciones sin ubicación asignada.
     
     Returns:
-        list: Lista de recepciones pendientes
+        list: Lista de recepciones pendientes como diccionarios
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -686,9 +687,12 @@ def get_recepciones_pendientes():
         AND m.ubicacion_destino_id IS NULL
         ORDER BY m.fecha_movimiento DESC
     """)
+    
     results = cursor.fetchall()
     conn.close()
-    return results
+    
+    # Convertir los objetos Row a diccionarios
+    return [dict(row) for row in results] if results else []
 
 
 def update_recepcion_with_inspection(movimiento_id: int, ubicacion_id: int, 
