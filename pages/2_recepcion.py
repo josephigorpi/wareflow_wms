@@ -311,12 +311,27 @@ with tab3:
     # Obtener recepciones
     recepciones = get_recepciones_recientes(limit=200)
     
+
     if recepciones:
-        # Filtrar por fecha
-        df_recepciones = pd.DataFrame(recepciones)
+        # Asegurar que los datos sean diccionarios
+        if recepciones and hasattr(recepciones[0], 'keys'):
+            # Ya son diccionarios o Row objects
+            df_recepciones = pd.DataFrame(recepciones)
+        else:
+            # Son tuplas, intentar convertir
+            st.warning("Los datos no tienen formato de diccionario. Intentando convertir...")
+            # Esto no debería pasar si convertiste en el service
+            df_recepciones = pd.DataFrame(recepciones)
         
-        # Convertir fechas
-        df_recepciones['fecha'] = pd.to_datetime(df_recepciones['fecha_movimiento']).dt.date
+        # Verificar que la columna existe
+        if 'fecha_movimiento' in df_recepciones.columns:
+            df_recepciones['fecha'] = pd.to_datetime(df_recepciones['fecha_movimiento']).dt.date
+        else:
+            st.error("Error: No se encontró la columna 'fecha_movimiento'")
+            # Mostrar columnas disponibles para debug
+            st.write("Columnas disponibles:", df_recepciones.columns.tolist())
+            # Crear columna fecha como fallback
+            df_recepciones['fecha'] = datetime.now().date()
         
         # Filtrar por rango de fechas
         mask = (df_recepciones['fecha'] >= fecha_inicio) & (df_recepciones['fecha'] <= fecha_fin)
