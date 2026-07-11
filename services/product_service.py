@@ -100,3 +100,31 @@ def get_expiring_products(days: int = 30):
 
 def count_expiring_products(days: int = 30):
     return len(get_expiring_products(days))
+
+
+def get_product_by_sku(sku: str):
+    """
+    Obtiene un producto por su SKU.
+    
+    Args:
+        sku (str): El SKU del producto a buscar
+        
+    Returns:
+        dict or None: El producto encontrado o None si no existe
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.*, 
+               c.nombre as categoria_nombre,
+               COALESCE(SUM(i.cantidad), 0) as stock_total
+        FROM productos p
+        LEFT JOIN categorias_producto c ON p.categoria_id = c.id
+        LEFT JOIN inventario i ON p.id = i.producto_id
+        WHERE p.sku = ? AND p.activo = 1
+        GROUP BY p.id
+    """, (sku,))
+    
+    result = cursor.fetchone()
+    conn.close()
+    return result
