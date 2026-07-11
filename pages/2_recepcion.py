@@ -144,7 +144,7 @@ with tab1:
             if estado_mercancia == "Rechazar":
                 motivo_rechazo = st.text_area("Motivo del rechazo", required=True)
             
-            submitted = st.form_submit_button("Registrar Recepción", use_container_width=True)
+            submitted = st.form_submit_button("Registrar Recepción", width='stretch')
             
             if submitted:
                 try:
@@ -263,7 +263,7 @@ with tab2:
                     placeholder="Detalles de la inspección, condiciones, calidad, etc."
                 )
                 
-                submitted = st.form_submit_button("Guardar Inspección", use_container_width=True)
+                submitted = st.form_submit_button("Guardar Inspección", width='stretch')
                 
                 if submitted:
                     try:
@@ -378,7 +378,7 @@ with tab4:
         
         # Mostrar datos
         st.subheader("Resumen por Día")
-        st.dataframe(df_agrupado, use_container_width=True)
+        st.dataframe(df_agrupado, width='stretch')
         
         # Top productos recibidos
         st.subheader("Top 10 Productos Más Recibidos")
@@ -387,7 +387,7 @@ with tab4:
         }).reset_index().sort_values('cantidad', ascending=False).head(10)
         
         if not top_productos.empty:
-            st.dataframe(top_productos, use_container_width=True)
+            st.dataframe(top_productos, width='stretch')
         
         # Estadísticas de estado
         st.subheader("Estado de Recepciones")
@@ -396,7 +396,7 @@ with tab4:
         
         col1, col2 = st.columns([2, 1])
         with col1:
-            st.dataframe(estado_counts, use_container_width=True)
+            st.dataframe(estado_counts, width='stretch')
         with col2:
             # Mostrar como gráfico de barras simple
             st.bar_chart(estado_counts.set_index('Estado'))
