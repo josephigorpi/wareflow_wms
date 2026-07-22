@@ -5,6 +5,7 @@ import streamlit as st
 
 from components.navbar import render_navbar
 from components.sidebar import render_sidebar
+from components.ui_helpers import svg_icon, section_title, kpi_card, spacer
 from core.auth import require_auth
 from core.permissions import require_permission
 from services.location_service import (
@@ -22,7 +23,7 @@ require_permission("ubicacion", "leer")
 can_write = "escribir" in st.session_state.get("permisos", {}).get("ubicacion", [])
 
 render_sidebar(current_page="ubicacion")
-render_navbar(titulo="Codificación y Ubicación", subtitulo="Gestión de ubicaciones y zonas del almacén", icono="🗺️")
+render_navbar(titulo="Codificación y Ubicación", subtitulo="Gestión de ubicaciones y zonas del almacén", icono="pin")
 
 # Estado de sesión
 for key, default in {
@@ -43,22 +44,22 @@ total_locations = len(get_all_locations())
 occupied_locations = len([l for l in get_all_locations() if l["ocupada"]])
 free_locations = total_locations - occupied_locations
 
-col1, col2, col3 = st.columns(3, gap="large")
+col1, col2, col3 = st.columns(3, gap="medium")
 
 with col1:
-    st.metric("📍 Total Ubicaciones", f"{total_locations:,}")
+    st.markdown(kpi_card("pin", "Total ubicaciones", f"{total_locations:,}"), unsafe_allow_html=True)
 
 with col2:
-    st.metric("🟢 Libres", f"{free_locations:,}")
+    st.markdown(kpi_card("check", "Libres", f"{free_locations:,}"), unsafe_allow_html=True)
 
 with col3:
-    st.metric("🔴 Ocupadas", f"{occupied_locations:,}")
+    st.markdown(kpi_card("box", "Ocupadas", f"{occupied_locations:,}"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Filtros con diseño moderno
-st.markdown("### 🔍 Filtros")
-col_f1, col_f2, col_f3 = st.columns([2, 3, 1], gap="large")
+# Filtros
+section_title("filter", "Filtros")
+col_f1, col_f2, col_f3 = st.columns([2, 3, 1], gap="medium")
 
 with col_f1:
     selected_zone_label = st.selectbox(
@@ -77,7 +78,7 @@ with col_f2:
 with col_f3:
     st.markdown("<br>", unsafe_allow_html=True)
     if can_write:
-        if st.button("➕ Nueva Ubicación", use_container_width=True):
+        if st.button("Nueva Ubicación", use_container_width=True):
             st.session_state["ub_show_form"] = True
             st.session_state["ub_edit_id"] = None
             st.session_state["ub_delete_id"] = None
@@ -89,7 +90,7 @@ if can_write and show_form:
     edit_id = st.session_state["ub_edit_id"]
     is_edit = edit_id is not None
 
-    form_title = f"✏️ Editar Ubicación" if is_edit else "➕ Nueva Ubicación"
+    form_title = f"Editar ubicación" if is_edit else "Nueva ubicación"
 
     with st.expander(form_title, expanded=True):
         prefill = {}
@@ -105,17 +106,17 @@ if can_write and show_form:
             return 0
 
         with st.form(key="ub_form"):
-            fc1, fc2 = st.columns(2, gap="large")
+            fc1, fc2 = st.columns(2, gap="medium")
 
             with fc1:
-                st.markdown("**Información de Zona**")
+                section_title("pin", "Información de zona")
                 zona_label = st.selectbox(
                     "Zona *",
                     options=list(zone_options.keys()),
                     index=_zone_index_for_prefill(),
                 )
                 
-                st.markdown("**Estructura Física**")
+                section_title("warehouse", "Estructura física")
                 pasillo = st.text_input(
                     "Pasillo *",
                     value=prefill.get("pasillo", ""),
@@ -138,14 +139,14 @@ if can_write and show_form:
                 )
 
             with fc2:
-                st.markdown("**Código**")
+                section_title("file", "Código")
                 codigo = st.text_input(
                     "Código *",
                     value=prefill.get("codigo", ""),
                     key="ub_form_codigo",
                 )
                 
-                st.markdown("**Capacidad**")
+                section_title("box", "Capacidad")
                 capacidad_kg = st.number_input(
                     "Capacidad (kg)",
                     min_value=0.0,
@@ -161,12 +162,12 @@ if can_write and show_form:
                     key="ub_form_cap_m3",
                 )
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            fb1, fb2 = st.columns([1, 1], gap="large")
+            spacer()
+            fb1, fb2 = st.columns([1, 1], gap="medium")
             with fb1:
-                submitted = st.form_submit_button("💾 Guardar", use_container_width=True, type="primary")
+                submitted = st.form_submit_button("Guardar", use_container_width=True, type="primary")
             with fb2:
-                cancelled = st.form_submit_button("❌ Cancelar", use_container_width=True)
+                cancelled = st.form_submit_button("Cancelar", use_container_width=True)
 
         if submitted:
             zona_id = zone_options.get(zona_label)
@@ -221,9 +222,9 @@ if delete_id is not None:
             f"⚠️ ¿Eliminar la ubicación **{loc['codigo']}** ({loc['zona_nombre']})? "
             "Esta acción no se puede deshacer."
         )
-        cd1, cd2 = st.columns([1, 1], gap="large")
+        cd1, cd2 = st.columns([1, 1], gap="medium")
         with cd1:
-            if st.button("✅ Confirmar", key="ub_confirm_delete", use_container_width=True):
+            if st.button("Confirmar", key="ub_confirm_delete", use_container_width=True):
                 try:
                     delete_location(delete_id)
                     st.success(f"✅ Ubicación **{loc['codigo']}** eliminada.")
@@ -233,13 +234,14 @@ if delete_id is not None:
                     st.error(f"❌ Error: {str(exc)}")
                     st.session_state["ub_delete_id"] = None
         with cd2:
-            if st.button("❌ Cancelar", key="ub_cancel_delete", use_container_width=True):
+            if st.button("Cancelar", key="ub_cancel_delete", use_container_width=True):
                 st.session_state["ub_delete_id"] = None
                 st.rerun()
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
 # Tabla de ubicaciones
+section_title("list", "Ubicaciones")
 filter_zona_id = zone_options.get(selected_zone_label) if selected_zone_label != "Todas las zonas" else None
 locations = get_all_locations(zona_id=filter_zona_id, search_term=search_term)
 
@@ -276,9 +278,9 @@ else:
 
     # Acciones por fila
     if can_write:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### ✏️ Acciones")
-        ac1, ac2, ac3 = st.columns([2, 1, 1], gap="large")
+        spacer()
+        section_title("edit", "Acciones")
+        ac1, ac2, ac3 = st.columns([2, 1, 1], gap="medium")
 
         with ac1:
             location_labels = [f"{loc['codigo']} — {loc['zona_nombre']}" for loc in locations]
@@ -293,14 +295,14 @@ else:
         selected_loc = locations[selected_index]
 
         with ac2:
-            if st.button("✏️ Editar", key="ub_btn_edit", use_container_width=True):
+            if st.button("Editar", key="ub_btn_edit", use_container_width=True):
                 st.session_state["ub_edit_id"] = selected_loc["id"]
                 st.session_state["ub_show_form"] = False
                 st.session_state["ub_delete_id"] = None
                 st.rerun()
 
         with ac3:
-            if st.button("🗑️ Eliminar", key="ub_btn_delete", use_container_width=True):
+            if st.button("Eliminar", key="ub_btn_delete", use_container_width=True):
                 st.session_state["ub_delete_id"] = selected_loc["id"]
                 st.session_state["ub_edit_id"] = None
                 st.session_state["ub_show_form"] = False

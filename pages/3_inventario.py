@@ -7,6 +7,7 @@ from core.auth import require_auth
 from core.permissions import require_permission
 from components.sidebar import render_sidebar
 from components.navbar import render_navbar
+from components.ui_helpers import svg_icon, section_title, kpi_card, alert_card, spacer
 from services.product_service import (
     count_active_products,
     count_low_stock_products, count_expiring_products,
@@ -23,53 +24,53 @@ require_auth()
 require_permission("inventario", "leer")
 
 render_sidebar(current_page="inventario")
-render_navbar(titulo="Control de Inventario", subtitulo="Gestión de stock, lotes y fechas de vencimiento", icono="📋")
+render_navbar(titulo="Control de Inventario", subtitulo="Gestión de stock, lotes y fechas de vencimiento", icono="box")
 
-# KPI Cards modernas
+# KPI Cards
 active_products = count_active_products()
 low_stock = count_low_stock_products()
 expiring_products = count_expiring_products()
 
-col1, col2, col3 = st.columns(3, gap="large")
+col1, col2, col3 = st.columns(3, gap="medium")
 
 with col1:
-    st.metric("📦 Total Productos", f"{active_products:,}")
+    st.markdown(kpi_card("box", "Total productos", f"{active_products:,}"), unsafe_allow_html=True)
 
 with col2:
-    st.metric("⚠️ Stock Bajo", f"{low_stock:,}")
+    st.markdown(kpi_card("alert", "Stock bajo", f"{low_stock:,}"), unsafe_allow_html=True)
 
 with col3:
-    st.metric("⏰ Próximos a Vencer", f"{expiring_products:,}")
+    st.markdown(kpi_card("arrow-down", "Próximos a vencer", f"{expiring_products:,}"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Alertas con expanders modernos
+# Alertas
 low_stock_products = get_products_low_stock()
 high_stock_products = get_products_high_stock()
 expiring_products_list = get_expiring_products()
 
 if low_stock_products or high_stock_products or expiring_products_list:
-    with st.expander("⚠️ Alertas de Inventario", expanded=False):
+    with st.expander("Alertas de inventario", expanded=False):
         if low_stock_products:
-            st.markdown("**Stock Mínimo**")
+            st.markdown("**Stock mínimo**")
             for product in low_stock_products:
-                st.warning(f"{product['sku']} - {product['nombre']}: {product['stock_total']} (mín: {product['stock_minimo']})")
+                st.markdown(alert_card("alert", product['sku'], f"{product['nombre']}: {product['stock_total']} (mín: {product['stock_minimo']})"), unsafe_allow_html=True)
         
         if high_stock_products:
-            st.markdown("**Stock Máximo**")
+            st.markdown("**Stock máximo**")
             for product in high_stock_products:
-                st.warning(f"{product['sku']} - {product['nombre']}: {product['stock_total']} (máx: {product['stock_maximo']})")
+                st.markdown(alert_card("alert", product['sku'], f"{product['nombre']}: {product['stock_total']} (máx: {product['stock_maximo']})"), unsafe_allow_html=True)
         
         if expiring_products_list:
-            st.markdown("**Próximos a Vencer**")
+            st.markdown("**Próximos a vencer**")
             for product in expiring_products_list:
-                st.warning(f"{product['sku']} - {product['nombre']} (Lote: {product['lote']} - Vence: {format_date(product['fecha_vencimiento'])})")
+                st.markdown(alert_card("arrow-down", product['sku'], f"{product['nombre']} (Lote: {product['lote']} - Vence: {format_date(product['fecha_vencimiento'])})"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Filtros con diseño moderno
-st.markdown("### 🔍 Filtros de Inventario")
-col_filtro1, col_filtro2 = st.columns(2, gap="large")
+# Filtros
+section_title("filter", "Filtros de inventario")
+col_filtro1, col_filtro2 = st.columns(2, gap="medium")
 
 products = get_all_products()
 product_options = ["Todos"] + [f"{p['sku']} - {p['nombre']}" for p in products]
@@ -96,9 +97,9 @@ elif selected_location_code != "Todos":
 else:
     inventory = get_all_inventory()
 
-# Mostrar tabla con diseño moderno
-st.markdown("<br>", unsafe_allow_html=True)
-st.markdown("### 📋 Inventario Actual")
+# Mostrar tabla
+spacer()
+section_title("list", "Inventario actual")
 if inventory:
     df_inventory = pd.DataFrame(inventory)
     if 'fecha_vencimiento' in df_inventory.columns:
@@ -109,12 +110,12 @@ if inventory:
 else:
     st.info("No hay registros de inventario.")
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Ajuste de inventario con diseño moderno
-st.markdown("### ✏️ Ajuste de Inventario")
+# Ajuste de inventario
+section_title("edit", "Ajuste de inventario")
 
-col_ajuste1, col_ajuste2 = st.columns([2, 1], gap="large")
+col_ajuste1, col_ajuste2 = st.columns([2, 1], gap="medium")
 
 with col_ajuste1:
     inventory_options = [f"{i['sku']} - {i['producto_nombre']} en {i['ubicacion_codigo']} (Lote: {i['lote'] or 'Sin lote'})" for i in get_all_inventory()]
@@ -126,20 +127,20 @@ if selected_inventory_label != "-- Seleccionar --":
     inventory_item = get_inventory_by_id(selected_inventory_id)
     if inventory_item:
         with st.form("form_ajuste_inventario"):
-            col_a, col_b = st.columns(2, gap="large")
+            col_a, col_b = st.columns(2, gap="medium")
             
             with col_a:
-                st.markdown("**Información Actual**")
+                section_title("box", "Información actual")
                 st.info(f"Cantidad actual: {inventory_item['cantidad']}")
                 st.info(f"Ubicación: {inventory_item['ubicacion_codigo']}")
                 st.info(f"Lote: {inventory_item['lote'] or 'Sin lote'}")
             
             with col_b:
-                st.markdown("**Ajuste**")
+                section_title("edit", "Ajuste")
                 new_cantidad = st.number_input("Nueva cantidad", min_value=0, value=inventory_item['cantidad'], key="nueva_cantidad")
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            submitted = st.form_submit_button("✅ Actualizar Inventario", use_container_width=True, type="primary")
+            spacer()
+            submitted = st.form_submit_button("Actualizar Inventario", use_container_width=True, type="primary")
             
             if submitted:
                 usuario_id = st.session_state.get('usuario_id')

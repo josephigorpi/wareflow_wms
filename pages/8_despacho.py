@@ -7,43 +7,44 @@ from core.auth import require_auth
 from core.permissions import require_permission
 from components.sidebar import render_sidebar
 from components.navbar import render_navbar
+from components.ui_helpers import svg_icon, section_title, kpi_card, spacer
 from services.movement_service import get_movements_by_type, create_despacho
 
 require_auth()
 require_permission("despacho", "leer")
 
 render_sidebar(current_page="despacho")
-render_navbar(titulo="Despacho", subtitulo="Consolidación y envío de pedidos", icono="🚚")
+render_navbar(titulo="Despacho", subtitulo="Consolidación y envío de pedidos", icono="truck")
 
 # KPI Cards
 picking_orders = get_movements_by_type("PICKING", limit=100)
 completed_picking = [o for o in picking_orders if o["estado"] == "COMPLETADO"]
 despachos = get_movements_by_type("DESPACHO", limit=100)
 
-col1, col2, col3 = st.columns(3, gap="large")
+col1, col2, col3 = st.columns(3, gap="medium")
 
 with col1:
-    st.metric("📦 Picking Listos", f"{len(completed_picking):,}")
+    st.markdown(kpi_card("check", "Picking listos", f"{len(completed_picking):,}"), unsafe_allow_html=True)
 
 with col2:
-    st.metric("🚚 Despachos Hoy", f"{len(despachos):,}")
+    st.markdown(kpi_card("truck", "Despachos hoy", f"{len(despachos):,}"), unsafe_allow_html=True)
 
 with col3:
-    st.metric("📋 Total Despachos", f"{len(despachos):,}")
+    st.markdown(kpi_card("list", "Total despachos", f"{len(despachos):,}"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Tabs modernos
-tab1, tab2, tab3 = st.tabs(["📦 Consolidar Pedidos", "📄 Documentos", "📊 Historial"])
+# Tabs
+tab1, tab2, tab3 = st.tabs(["Consolidar Pedidos", "Documentos", "Historial"])
 
 # Tab 1: Consolidar Pedidos
 with tab1:
-    st.markdown("### 📦 Consolidar Pedidos para Despacho")
+    section_title("box", "Consolidar pedidos para despacho")
     
     if not completed_picking:
         st.info("ℹ️ No hay picking completados para consolidar.")
     else:
-        st.markdown("**Picking Completados Disponibles**")
+        section_title("check", "Picking completados disponibles")
         
         df_picking = pd.DataFrame(completed_picking)
         df_picking["Seleccionar"] = False
@@ -67,19 +68,21 @@ with tab1:
         selected_ids = edited_df[edited_df["Seleccionar"]]["id"].tolist()
         
         if selected_ids:
-            st.markdown(f"**Pedidos Seleccionados:** {len(selected_ids)}")
+            st.markdown(f"**Pedidos seleccionados:** {len(selected_ids)}")
             
             with st.form("form_despacho"):
-                col1, col2 = st.columns(2, gap="large")
+                col1, col2 = st.columns(2, gap="medium")
                 
                 with col1:
-                    referencia = st.text_input("Referencia del Despacho", placeholder="Ej: DESP-2024-001")
+                    section_title("file", "Referencia del despacho")
+                    referencia = st.text_input("Referencia", placeholder="Ej: DESP-2024-001")
                 
                 with col2:
+                    section_title("edit", "Observaciones")
                     observaciones = st.text_area("Observaciones (opcional)", placeholder="Detalles adicionales...")
                 
-                st.markdown("<br>", unsafe_allow_html=True)
-                submitted = st.form_submit_button("🚚 Registrar Despacho", use_container_width=True, type="primary")
+                spacer()
+                submitted = st.form_submit_button("Registrar Despacho", use_container_width=True, type="primary")
                 
                 if submitted:
                     try:
@@ -97,7 +100,7 @@ with tab1:
 
 # Tab 2: Generar Documentos
 with tab2:
-    st.markdown("### 📄 Generar Documentos de Envío")
+    section_title("file", "Generar documentos de envío")
     
     despachos = get_movements_by_type("DESPACHO", limit=50)
     
@@ -105,7 +108,7 @@ with tab2:
         st.info("ℹ️ No hay despachos registrados.")
     else:
         despacho_options = {f"Despacho #{d['id']} - {d['referencia'] or 'Sin referencia'} ({d['fecha_movimiento'][:10]})": d["id"] for d in despachos}
-        selected_despacho_label = st.selectbox("Seleccionar Despacho", list(despacho_options.keys()))
+        selected_despacho_label = st.selectbox("Seleccionar despacho", list(despacho_options.keys()))
         
         if selected_despacho_label:
             selected_despacho = next(d for d in despachos if d["id"] == despacho_options[selected_despacho_label])
@@ -119,7 +122,7 @@ with tab2:
                             margin-bottom: 1.5rem;
                             border: 1px solid #6EE7B7;'>
                     <h4 style='margin: 0 0 1rem 0; color: #065F46; font-size: 1.1rem; font-weight: 600;'>
-                        📋 Detalles del Despacho
+                        Detalles del despacho
                     </h4>
                     <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;'>
                         <p style='margin: 0; color: #047857; font-size: 0.9rem;'><strong>ID:</strong> {selected_despacho['id']}</p>
@@ -133,16 +136,16 @@ with tab2:
                 unsafe_allow_html=True
             )
             
-            st.markdown("**Generar Documento**")
-            doc_type = st.selectbox("Tipo de Documento", ["Guía de Despacho", "Factura", "Packing List"])
+            section_title("file", "Generar documento")
+            doc_type = st.selectbox("Tipo de documento", ["Guía de Despacho", "Factura", "Packing List"])
             
-            if st.button(f"📄 Generar {doc_type}", use_container_width=True):
+            if st.button(f"Generar {doc_type}", use_container_width=True):
                 st.success(f"✅ {doc_type} generado exitosamente para Despacho #{selected_despacho['id']}!")
                 st.info("ℹ️ En una implementación completa, se generaría un PDF o archivo descargable.")
 
 # Tab 3: Historial de Despachos
 with tab3:
-    st.markdown("### 📊 Historial de Despachos")
+    section_title("list", "Historial de despachos")
     
     despachos = get_movements_by_type("DESPACHO", limit=100)
     

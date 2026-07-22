@@ -254,7 +254,53 @@ INSERT OR IGNORE INTO movimientos (tipo, producto_id, ubicacion_destino_id, cant
   ('SALIDA', 1, NULL, 2, 'PED-001-2024', 'Venta de laptops', 'COMPLETADO', 1, datetime('now', '-15 days')),
   ('SALIDA', 3, NULL, 10, 'PED-002-2024', 'Venta de teclados', 'COMPLETADO', 1, datetime('now', '-10 days')),
   ('SALIDA', 6, NULL, 5, 'PED-003-2024', 'Venta de camisas', 'COMPLETADO', 1, datetime('now', '-7 days')),
-  ('SALIDA', 10, NULL, 10, 'PED-004-2024', 'Venta de arroz', 'COMPLETADO', 1, datetime('now', '-5 days'));
+  ('SALIDA', 10, NULL, 10, 'PED-004-2024', 'Venta de arroz', 'COMPLETADO', 1, datetime('now', '-5 days')),
+
+  -- Movimientos de entrada de HOY (2026-07-21)
+  ('ENTRADA', 2, 2, 5, 'OC-TODAY-001', 'Recepción de monitores hoy', 'COMPLETADO', 1, '2026-07-21 10:00:00'),
+  ('ENTRADA', 4, 4, 20, 'OC-TODAY-002', 'Recepción de mouses hoy', 'COMPLETADO', 1, '2026-07-21 11:00:00'),
+  ('ENTRADA', 7, 8, 15, 'OC-TODAY-003', 'Recepción de jeans hoy', 'COMPLETADO', 1, '2026-07-21 12:00:00'),
+  ('ENTRADA', 11, 12, 10, 'OC-TODAY-004', 'Recepción de aceite hoy', 'COMPLETADO', 1, '2026-07-21 13:00:00'),
+  ('ENTRADA', 14, 15, 15, 'OC-TODAY-005', 'Recepción de café hoy', 'COMPLETADO', 1, '2026-07-21 14:00:00'),
+
+  -- Movimientos de salida de HOY (2026-07-21)
+  ('SALIDA', 1, NULL, 3, 'PED-TODAY-001', 'Venta de laptops hoy', 'COMPLETADO', 1, '2026-07-21 15:00:00'),
+  ('SALIDA', 3, NULL, 8, 'PED-TODAY-002', 'Venta de teclados hoy', 'COMPLETADO', 1, '2026-07-21 16:00:00'),
+  ('SALIDA', 6, NULL, 4, 'PED-TODAY-003', 'Venta de camisas hoy', 'COMPLETADO', 1, '2026-07-21 17:00:00'),
+  ('SALIDA', 10, NULL, 12, 'PED-TODAY-004', 'Venta de arroz hoy', 'COMPLETADO', 1, '2026-07-21 18:00:00'),
+
+  -- Movimientos de PICKING (pendientes hoy)
+  ('PICKING', 1, 1, 2, 'PICK-001', 'Orden de picking pendiente', 'PENDIENTE', 1, '2026-07-21 09:00:00'),
+  ('PICKING', 2, 2, 3, 'PICK-002', 'Orden de picking pendiente', 'PENDIENTE', 1, '2026-07-21 09:30:00'),
+  ('PICKING', 3, 3, 5, 'PICK-003', 'Orden de picking pendiente', 'PENDIENTE', 1, '2026-07-21 10:00:00'),
+  ('PICKING', 4, 4, 8, 'PICK-004', 'Orden de picking pendiente', 'PENDIENTE', 1, '2026-07-21 10:30:00'),
+  ('PICKING', 6, 7, 3, 'PICK-005', 'Orden de picking pendiente', 'PENDIENTE', 1, '2026-07-21 11:00:00'),
+
+  -- Movimientos de PICKING (completados hoy)
+  ('PICKING', 5, 5, 2, 'PICK-006', 'Orden de picking completada', 'COMPLETADO', 1, '2026-07-21 08:00:00'),
+  ('PICKING', 7, 8, 4, 'PICK-007', 'Orden de picking completada', 'COMPLETADO', 1, '2026-07-21 08:30:00'),
+  ('PICKING', 10, 11, 6, 'PICK-008', 'Orden de picking completada', 'COMPLETADO', 1, '2026-07-21 09:00:00'),
+  ('PICKING', 11, 12, 5, 'PICK-009', 'Orden de picking completada', 'COMPLETADO', 1, '2026-07-21 09:30:00'),
+  ('PICKING', 14, 15, 3, 'PICK-010', 'Orden de picking completada', 'COMPLETADO', 1, '2026-07-21 10:00:00'),
+
+  -- Movimientos de DESPACHO (hoy)
+  ('DESPACHO', 1, NULL, 2, 'DESP-001', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 12:00:00'),
+  ('DESPACHO', 2, NULL, 3, 'DESP-002', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 12:30:00'),
+  ('DESPACHO', 3, NULL, 5, 'DESP-003', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 13:00:00'),
+  ('DESPACHO', 4, NULL, 4, 'DESP-004', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 13:30:00'),
+  ('DESPACHO', 5, NULL, 2, 'DESP-005', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 14:00:00'),
+  ('DESPACHO', 6, NULL, 3, 'DESP-006', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 14:30:00'),
+  ('DESPACHO', 7, NULL, 4, 'DESP-007', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 15:00:00'),
+  ('DESPACHO', 10, NULL, 6, 'DESP-008', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 15:30:00'),
+  ('DESPACHO', 11, NULL, 5, 'DESP-009', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 16:00:00'),
+  ('DESPACHO', 14, NULL, 3, 'DESP-010', 'Despacho consolidado', 'COMPLETADO', 1, '2026-07-21 16:30:00'),
+
+  -- Movimientos de TRASLADO
+  ('TRASLADO', 1, 1, 3, 'TRAS-001', 'Traslado interno de producto', 'COMPLETADO', 1, '2026-07-18 10:00:00'),
+  ('TRASLADO', 2, 2, 2, 'TRAS-002', 'Traslado interno de producto', 'COMPLETADO', 1, '2026-07-19 11:00:00'),
+  ('TRASLADO', 3, 3, 5, 'TRAS-003', 'Traslado interno de producto', 'COMPLETADO', 1, '2026-07-20 12:00:00'),
+  ('TRASLADO', 4, 4, 10, 'TRAS-004', 'Traslado interno de producto', 'COMPLETADO', 1, '2026-07-21 13:00:00'),
+  ('TRASLADO', 6, 7, 5, 'TRAS-005', 'Traslado interno de producto', 'COMPLETADO', 1, '2026-07-21 14:00:00');
 
 -- ============================================
 -- 9. REGISTROS DE SESIÓN (ejemplos)

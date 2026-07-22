@@ -9,6 +9,7 @@ from core.auth import require_auth
 from core.permissions import require_permission
 from components.sidebar import render_sidebar
 from components.navbar import render_navbar
+from components.ui_helpers import svg_icon, section_title, kpi_card, spacer
 from services.product_service import get_products_with_inventory, search_products
 from services.location_service import get_locations_with_zones, count_locations_by_status
 from services.movement_service import get_movements_by_date_range, get_movements_grouped_by_day
@@ -18,31 +19,31 @@ require_auth()
 require_permission("reportes", "leer")
 
 render_sidebar(current_page="reportes")
-render_navbar(titulo="Reportes y KPIs", subtitulo="Análisis y métricas del sistema", icono="📈")
+render_navbar(titulo="Reportes y KPIs", subtitulo="Análisis y métricas del sistema", icono="bar-chart")
 
 # KPI Cards globales
 status_counts = count_locations_by_status()
 products = get_products_with_inventory()
 total_products = len(products) if products else 0
 
-col1, col2, col3 = st.columns(3, gap="large")
+col1, col2, col3 = st.columns(3, gap="medium")
 
 with col1:
-    st.metric("📦 Total Productos", f"{total_products:,}")
+    st.markdown(kpi_card("box", "Total productos", f"{total_products:,}"), unsafe_allow_html=True)
 
 with col2:
-    st.metric("📍 Ubicaciones", f"{status_counts['total']:,}")
+    st.markdown(kpi_card("pin", "Ubicaciones", f"{status_counts['total']:,}"), unsafe_allow_html=True)
 
 with col3:
-    st.metric("🟢 Ocupación", f"{status_counts['ocupadas']:,}")
+    st.markdown(kpi_card("check", "Ocupación", f"{status_counts['ocupadas']:,}"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Tabs modernos
-tab1, tab2, tab3 = st.tabs(["📦 Productos", "📊 Movimientos", "🗺️ Ubicaciones"])
+# Tabs
+tab1, tab2, tab3 = st.tabs(["Productos", "Movimientos", "Ubicaciones"])
 
 with tab1:
-    st.markdown("### 📦 Reportes de Productos")
+    section_title("box", "Reportes de productos")
     
     query = st.text_input("Buscar por SKU o nombre", placeholder="Ej: PROD-001", key="search_products")
     
@@ -54,7 +55,7 @@ with tab1:
     if products:
         df_products = pd.DataFrame(products)
         
-        st.markdown("**Análisis ABC (Stock)**")
+        section_title("bar-chart", "Análisis ABC (Stock)")
         df_products["valor_stock"] = df_products["stock_total"]
         
         df_abc = df_products.sort_values("stock_total", ascending=False)
@@ -77,8 +78,8 @@ with tab1:
                            color_discrete_map={"A": "#10B981", "B": "#F59E0B", "C": "#EF4444"})
         st.plotly_chart(col_abc, use_container_width=True)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("**Lista de productos**")
+        spacer()
+        section_title("list", "Lista de productos")
         df_display = df_abc[["sku", "nombre", "stock_total", "stock_minimo", "categoria_abc"]]
         df_display.columns = ["SKU", "Nombre", "Stock Total", "Stock Mínimo", "Categoría ABC"]
         
@@ -94,7 +95,7 @@ with tab1:
         
         csv = df_display.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Exportar CSV",
+            label="Exportar CSV",
             data=csv,
             file_name=f"productos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime='text/csv',
@@ -104,9 +105,9 @@ with tab1:
         st.info("ℹ️ No hay productos disponibles.")
 
 with tab2:
-    st.markdown("### 📊 Reportes de Movimientos")
+    section_title("arrow-down", "Reportes de movimientos")
     
-    col1, col2, col3 = st.columns(3, gap="large")
+    col1, col2, col3 = st.columns(3, gap="medium")
     
     today = datetime.now()
     with col1:
@@ -123,8 +124,8 @@ with tab2:
         df_movements = pd.DataFrame(movements)
         df_movements["fecha_movimiento"] = df_movements["fecha_movimiento"].apply(format_date)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("**Gráfico de movimientos por día**")
+        spacer()
+        section_title("line-chart", "Gráfico de movimientos por día")
         grouped_movements = get_movements_grouped_by_day(str(fecha_inicio), str(fecha_fin))
         if grouped_movements:
             df_grouped = pd.DataFrame(grouped_movements)
@@ -133,8 +134,8 @@ with tab2:
                          color_discrete_map={"ENTRADA": "#10B981", "SALIDA": "#EF4444", "TRASLADO": "#F59E0B"})
             st.plotly_chart(fig, use_container_width=True)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("**Lista de movimientos**")
+        spacer()
+        section_title("list", "Lista de movimientos")
         df_display = df_movements[["fecha_movimiento", "tipo", "sku", "producto_nombre", "cantidad", "usuario_nombre", "estado"]]
         df_display.columns = ["Fecha", "Tipo", "SKU", "Producto", "Cantidad", "Usuario", "Estado"]
         
@@ -150,7 +151,7 @@ with tab2:
         
         csv = df_display.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Exportar CSV",
+            label="Exportar CSV",
             data=csv,
             file_name=f"movimientos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime='text/csv',
@@ -160,18 +161,18 @@ with tab2:
         st.info("ℹ️ No hay movimientos en el rango de fechas seleccionado.")
 
 with tab3:
-    st.markdown("### 🗺️ Reportes de Ubicaciones")
+    section_title("pin", "Reportes de ubicaciones")
     
     status_counts = count_locations_by_status()
-    col1, col2, col3 = st.columns(3, gap="large")
+    col1, col2, col3 = st.columns(3, gap="medium")
     with col1:
-        st.metric("📍 Total", f"{status_counts['total']:,}")
+        st.markdown(kpi_card("pin", "Total", f"{status_counts['total']:,}"), unsafe_allow_html=True)
     with col2:
-        st.metric("🟢 Ocupadas", f"{status_counts['ocupadas']:,}")
+        st.markdown(kpi_card("check", "Ocupadas", f"{status_counts['ocupadas']:,}"), unsafe_allow_html=True)
     with col3:
-        st.metric("🔴 Libres", f"{status_counts['libres']:,}")
+        st.markdown(kpi_card("box", "Libres", f"{status_counts['libres']:,}"), unsafe_allow_html=True)
     
-    st.markdown("<br>", unsafe_allow_html=True)
+    spacer()
     estado_filtro = st.selectbox("Filtrar por estado", ["Todos", "Ocupada", "Libre"], key="estado_ubicacion")
     
     locations = get_locations_with_zones()
@@ -197,7 +198,7 @@ with tab3:
         
         csv = df_display.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Exportar CSV",
+            label="Exportar CSV",
             data=csv,
             file_name=f"ubicaciones_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime='text/csv',

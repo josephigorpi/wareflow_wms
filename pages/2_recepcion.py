@@ -8,7 +8,7 @@ from core.auth import require_auth
 from core.permissions import require_permission
 from components.sidebar import render_sidebar
 from components.navbar import render_navbar
-from components.alerts import alert_success, alert_error, alert_info, alert_warning
+from components.ui_helpers import svg_icon, section_title, kpi_card, alert_card, spacer
 from services.product_service import get_all_products, get_product_by_sku, search_products
 from services.location_service import get_all_locations, get_available_locations
 from services.movement_service import (
@@ -22,45 +22,45 @@ require_auth()
 require_permission("recepcion", "leer")
 
 render_sidebar(current_page="recepcion")
-render_navbar(titulo="Recepción e Inspección", subtitulo="Gestión de entrada de mercancía", icono="📦")
+render_navbar(titulo="Recepción e Inspección", subtitulo="Gestión de entrada de mercancía", icono="inbox")
 
-# KPI Cards modernas
+# KPI Cards
 recepciones_hoy = len([r for r in get_recepciones_recientes(100) if r['fecha_movimiento'].startswith(datetime.now().strftime('%Y-%m-%d'))])
 pendientes = len(get_recepciones_pendientes())
+productos_activos = len(get_all_products())
+ubicaciones_disponibles = len(get_available_locations())
 
-col1, col2, col3, col4 = st.columns(4, gap="large")
+col1, col2, col3, col4 = st.columns(4, gap="medium")
 
 with col1:
-    st.metric("📥 Recepciones Hoy", f"{recepciones_hoy:,}")
+    st.markdown(kpi_card("arrow-down", "Recepciones hoy", f"{recepciones_hoy:,}"), unsafe_allow_html=True)
 
 with col2:
-    st.metric("⏳ Pendientes", f"{pendientes:,}")
+    st.markdown(kpi_card("list", "Pendientes", f"{pendientes:,}"), unsafe_allow_html=True)
 
 with col3:
-    productos_activos = len(get_all_products())
-    st.metric("📦 Productos", f"{productos_activos:,}")
+    st.markdown(kpi_card("box", "Productos", f"{productos_activos:,}"), unsafe_allow_html=True)
 
 with col4:
-    ubicaciones_disponibles = len(get_available_locations())
-    st.metric("📍 Ubicaciones Libres", f"{ubicaciones_disponibles:,}")
+    st.markdown(kpi_card("pin", "Ubicaciones libres", f"{ubicaciones_disponibles:,}"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Tabs modernos
+# Tabs
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📥 Registrar Recepción", 
-    "🔍 Inspeccionar", 
-    "📋 Historial",
-    "📊 Estadísticas"
+    "Registrar Recepción", 
+    "Inspeccionar", 
+    "Historial",
+    "Estadísticas"
 ])
 
 # Tab 1: Registrar Recepción
 with tab1:
-    st.markdown("### 📥 Registrar Recepción de Mercancía")
+    section_title("inbox", "Registrar recepción")
     
-    # Opciones de búsqueda de producto con diseño moderno
-    st.markdown("**Método de búsqueda**")
-    col_a, col_b = st.columns(2)
+    # Opciones de búsqueda de producto
+    section_title("search", "Método de búsqueda")
+    col_a, col_b = st.columns(2, gap="medium")
     with col_a:
         busqueda_sku = st.button("Buscar por SKU", use_container_width=True)
     with col_b:
@@ -122,10 +122,10 @@ with tab1:
                 unsafe_allow_html=True
             )
             
-            col1, col2 = st.columns(2, gap="large")
+            col1, col2 = st.columns(2, gap="medium")
             
             with col1:
-                st.markdown("**Información de la recepción**")
+                section_title("box", "Información de la recepción")
                 cantidad = st.number_input(
                     "Cantidad a recibir", 
                     min_value=1, 
@@ -143,7 +143,7 @@ with tab1:
                 )
             
             with col2:
-                st.markdown("**Ubicación y Referencia**")
+                section_title("pin", "Ubicación y referencia")
                 ubicacion_opcion = st.selectbox(
                     "Asignación de ubicación",
                     ["Automática", "Manual"]
@@ -164,8 +164,8 @@ with tab1:
                 
                 observaciones = st.text_area("Observaciones (opcional)", placeholder="Condiciones de la mercancía, embalaje, etc.")
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("**Estado de la Mercancía**")
+            spacer()
+            section_title("alert", "Estado de la mercancía")
             estado_mercancia = st.selectbox(
                 "Condición",
                 ["Buen estado", "Con detalles menores", "Dañada", "Rechazar"]
@@ -174,8 +174,8 @@ with tab1:
             if estado_mercancia == "Rechazar":
                 motivo_rechazo = st.text_area("Motivo del rechazo", required=True)
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            submitted = st.form_submit_button("📦 Registrar Recepción", use_container_width=True, type="primary")
+            spacer()
+            submitted = st.form_submit_button("Registrar Recepción", use_container_width=True, type="primary")
             
             if submitted:
                 try:
@@ -218,7 +218,7 @@ with tab1:
 
 # Tab 2: Inspeccionar
 with tab2:
-    st.markdown("### 🔍 Inspección de Recepciones Pendientes")
+    section_title("search", "Inspección de recepciones pendientes")
     
     pendientes = get_recepciones_pendientes()
     
@@ -232,7 +232,7 @@ with tab2:
         
         # Seleccionar una recepción para inspeccionar
         opciones = {f"{r['id']} - {r['sku']} - {r['cantidad']} uds ({r['fecha_movimiento'][:10]})": r['id'] for r in pendientes}
-        seleccion = st.selectbox("Seleccionar Recepción para Inspeccionar", list(opciones.keys()))
+        seleccion = st.selectbox("Seleccionar recepción para inspeccionar", list(opciones.keys()))
         
         if seleccion:
             movimiento_id = opciones[seleccion]
@@ -247,7 +247,7 @@ with tab2:
                             margin-bottom: 1.5rem;
                             border: 1px solid #FCD34D;'>
                     <h4 style='margin: 0 0 1rem 0; color: #92400E; font-size: 1.1rem; font-weight: 600;'>
-                        📋 Detalles de la Recepción
+                        Detalles de la recepción
                     </h4>
                     <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;'>
                         <p style='margin: 0; color: #78350F; font-size: 0.9rem;'><strong>ID:</strong> {movimiento['id']}</p>
@@ -264,9 +264,9 @@ with tab2:
             
             # Formulario de inspección
             with st.form("form_inspeccion"):
-                st.markdown("**Resultado de Inspección**")
+                section_title("check", "Resultado de inspección")
                 
-                col1, col2 = st.columns(2, gap="large")
+                col1, col2 = st.columns(2, gap="medium")
                 with col1:
                     aprobado = st.selectbox(
                         "Decisión",
@@ -302,8 +302,8 @@ with tab2:
                     placeholder="Detalles de la inspección, condiciones, calidad, etc."
                 )
                 
-                st.markdown("<br>", unsafe_allow_html=True)
-                submitted = st.form_submit_button("✅ Guardar Inspección", use_container_width=True, type="primary")
+                spacer()
+                submitted = st.form_submit_button("Guardar Inspección", use_container_width=True, type="primary")
                 
                 if submitted:
                     try:
@@ -333,21 +333,21 @@ with tab2:
 
 # Tab 3: Historial de Recepciones
 with tab3:
-    st.markdown("### 📋 Historial de Recepciones")
+    section_title("list", "Historial de recepciones")
     
-    # Filtros con diseño moderno
-    with st.container():
-        col1, col2 = st.columns(2, gap="large")
-        with col1:
-            fecha_inicio = st.date_input(
-                "Fecha Inicio",
-                value=datetime.now().date() - timedelta(days=30)
-            )
-        with col2:
-            fecha_fin = st.date_input(
-                "Fecha Fin",
-                value=datetime.now().date()
-            )
+    # Filtros
+    section_title("filter", "Filtrar por fecha")
+    col1, col2 = st.columns(2, gap="medium")
+    with col1:
+        fecha_inicio = st.date_input(
+            "Fecha inicio",
+            value=datetime.now().date() - timedelta(days=30)
+        )
+    with col2:
+        fecha_fin = st.date_input(
+            "Fecha fin",
+            value=datetime.now().date()
+        )
     
     recepciones = get_recepciones_recientes(limit=200)
     
@@ -364,17 +364,17 @@ with tab3:
         
         if not df_filtrado.empty:
             # KPIs del historial
-            col1, col2, col3 = st.columns(3, gap="large")
+            col1, col2, col3 = st.columns(3, gap="medium")
             with col1:
-                st.metric("📦 Total", len(df_filtrado))
+                st.markdown(kpi_card("box", "Total", f"{len(df_filtrado):,}"), unsafe_allow_html=True)
             with col2:
                 completados = len(df_filtrado[df_filtrado['estado'] == 'COMPLETADO'])
-                st.metric("✅ Completadas", completados)
+                st.markdown(kpi_card("check", "Completadas", f"{completados:,}"), unsafe_allow_html=True)
             with col3:
                 pendientes = len(df_filtrado[df_filtrado['estado'] != 'COMPLETADO'])
-                st.metric("⏳ Pendientes", pendientes)
+                st.markdown(kpi_card("list", "Pendientes", f"{pendientes:,}"), unsafe_allow_html=True)
             
-            st.markdown("<br>", unsafe_allow_html=True)
+            spacer()
             
             # Tabla con estilos
             columns_to_show = ["id", "sku", "producto_nombre", "cantidad", "destino_codigo", "referencia", "estado", "fecha_movimiento"]
@@ -398,7 +398,7 @@ with tab3:
 
 # Tab 4: Estadísticas
 with tab4:
-    st.markdown("### 📊 Estadísticas de Recepciones")
+    section_title("bar-chart", "Estadísticas de recepciones")
     
     recepciones = get_recepciones_recientes(limit=500)
     
@@ -413,13 +413,13 @@ with tab4:
         }).reset_index()
         df_agrupado.columns = ['Fecha', 'Número de Recepciones', 'Total Unidades']
         
-        # Resumen por día con diseño moderno
-        st.markdown("**Resumen por Día**")
+        # Resumen por día
+        section_title("list", "Resumen por día")
         st.dataframe(df_agrupado, use_container_width=True, hide_index=True)
         
         # Top productos recibidos
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("**Top 10 Productos Más Recibidos**")
+        spacer()
+        section_title("box", "Top 10 productos más recibidos")
         top_productos = df.groupby(['sku', 'producto_nombre']).agg({
             'cantidad': 'sum'
         }).reset_index().sort_values('cantidad', ascending=False).head(10)
@@ -428,12 +428,12 @@ with tab4:
             st.dataframe(top_productos, use_container_width=True, hide_index=True)
         
         # Estadísticas de estado
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("**Estado de Recepciones**")
+        spacer()
+        section_title("alert", "Estado de recepciones")
         estado_counts = df['estado'].value_counts().reset_index()
         estado_counts.columns = ['Estado', 'Cantidad']
         
-        col1, col2 = st.columns([2, 1], gap="large")
+        col1, col2 = st.columns([2, 1], gap="medium")
         with col1:
             st.dataframe(estado_counts, use_container_width=True, hide_index=True)
         with col2:

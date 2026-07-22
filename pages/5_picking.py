@@ -7,6 +7,7 @@ from core.auth import require_auth
 from core.permissions import require_permission
 from components.sidebar import render_sidebar
 from components.navbar import render_navbar
+from components.ui_helpers import svg_icon, section_title, kpi_card, spacer
 from services.product_service import get_all_products, get_product_by_sku
 from services.location_service import get_all_locations
 from services.movement_service import (
@@ -17,32 +18,32 @@ require_auth()
 require_permission("picking", "leer")
 
 render_sidebar(current_page="picking")
-render_navbar(titulo="Picking", subtitulo="Preparación y recolección de pedidos", icono="📦")
+render_navbar(titulo="Picking", subtitulo="Preparación y recolección de pedidos", icono="cart")
 
 # KPI Cards
 picking_orders = get_movements_by_type("PICKING", limit=100)
 pending_orders = [o for o in picking_orders if o["estado"] == "PENDIENTE"]
 completed_today = [o for o in picking_orders if o["estado"] == "COMPLETADO"]
 
-col1, col2, col3 = st.columns(3, gap="large")
+col1, col2, col3 = st.columns(3, gap="medium")
 
 with col1:
-    st.metric("📋 Pendientes", f"{len(pending_orders):,}")
+    st.markdown(kpi_card("list", "Pendientes", f"{len(pending_orders):,}"), unsafe_allow_html=True)
 
 with col2:
-    st.metric("✅ Completadas Hoy", f"{len(completed_today):,}")
+    st.markdown(kpi_card("check", "Completadas hoy", f"{len(completed_today):,}"), unsafe_allow_html=True)
 
 with col3:
-    st.metric("📦 Total Órdenes", f"{len(picking_orders):,}")
+    st.markdown(kpi_card("box", "Total órdenes", f"{len(picking_orders):,}"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
-# Tabs modernos
-tab1, tab2, tab3 = st.tabs(["📝 Crear Orden", "🔍 Guiar Picking", "✅ Validar"])
+# Tabs
+tab1, tab2, tab3 = st.tabs(["Crear Orden", "Guiar Picking", "Validar"])
 
 # Tab 1: Crear Orden de Picking
 with tab1:
-    st.markdown("### 📝 Crear Orden de Picking")
+    section_title("plus", "Crear orden de picking")
     
     productos = get_all_products()
     ubicaciones = get_all_locations()
@@ -53,31 +54,31 @@ with tab1:
         st.info("ℹ️ No hay ubicaciones disponibles.")
     else:
         with st.form("form_picking"):
-            col1, col2 = st.columns(2, gap="large")
+            col1, col2 = st.columns(2, gap="medium")
             
             with col1:
-                st.markdown("**Producto**")
+                section_title("box", "Producto")
                 producto_options = {f"{p['sku']} - {p['nombre']}": p["id"] for p in productos}
-                selected_product = st.selectbox("Seleccionar Producto", list(producto_options.keys()))
+                selected_product = st.selectbox("Seleccionar producto", list(producto_options.keys()))
                 producto_id = producto_options[selected_product] if selected_product else None
                 
-                st.markdown("**Cantidad**")
-                cantidad = st.number_input("Cantidad a Recoger", min_value=1, value=1)
+                section_title("arrow-down", "Cantidad")
+                cantidad = st.number_input("Cantidad a recoger", min_value=1, value=1)
             
             with col2:
-                st.markdown("**Ubicación de Origen**")
+                section_title("pin", "Ubicación de origen")
                 ubicacion_options = {f"{u['codigo']} - {u['zona_nombre']}": u["id"] for u in ubicaciones}
                 selected_ubicacion = st.selectbox("Ubicación", list(ubicacion_options.keys()))
                 ubicacion_id = ubicacion_options[selected_ubicacion] if selected_ubicacion else None
                 
-                st.markdown("**Referencia**")
+                section_title("file", "Referencia")
                 referencia = st.text_input("Referencia (opcional)", placeholder="Ej: PED-2024-001")
             
-            st.markdown("**Observaciones**")
+            section_title("edit", "Observaciones")
             observaciones = st.text_area("Observaciones (opcional)", placeholder="Detalles adicionales...")
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            submitted = st.form_submit_button("📦 Crear Orden", use_container_width=True, type="primary")
+            spacer()
+            submitted = st.form_submit_button("Crear Orden", use_container_width=True, type="primary")
             
             if submitted and producto_id and ubicacion_id:
                 try:
@@ -96,7 +97,7 @@ with tab1:
 
 # Tab 2: Guiar Picking
 with tab2:
-    st.markdown("### 🔍 Órdenes de Picking Pendientes")
+    section_title("search", "Órdenes de picking pendientes")
     
     picking_orders = get_movements_by_type("PICKING", limit=100)
     pending_orders = [o for o in picking_orders if o["estado"] == "PENDIENTE"]
@@ -111,7 +112,7 @@ with tab2:
 
 # Tab 3: Validar y Completar
 with tab3:
-    st.markdown("### ✅ Validar y Completar Picking")
+    section_title("check", "Validar y completar picking")
     
     picking_orders = get_movements_by_type("PICKING", limit=100)
     pending_orders = [o for o in picking_orders if o["estado"] == "PENDIENTE"]
@@ -120,7 +121,7 @@ with tab3:
         st.info("ℹ️ No hay órdenes de picking pendientes para validar.")
     else:
         order_options = {f"Orden #{o['id']} - {o['sku']} ({o['cantidad']} uds)": o["id"] for o in pending_orders}
-        selected_order_label = st.selectbox("Seleccionar Orden de Picking", list(order_options.keys()))
+        selected_order_label = st.selectbox("Seleccionar orden de picking", list(order_options.keys()))
         selected_order_id = order_options[selected_order_label]
         
         selected_order = next(o for o in pending_orders if o["id"] == selected_order_id)
@@ -134,7 +135,7 @@ with tab3:
                         margin-bottom: 1.5rem;
                         border: 1px solid #A5B4FC;'>
                 <h4 style='margin: 0 0 1rem 0; color: #3730A3; font-size: 1.1rem; font-weight: 600;'>
-                    📋 Detalles de la Orden
+                    Detalles de la orden
                 </h4>
                 <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;'>
                     <p style='margin: 0; color: #4338CA; font-size: 0.9rem;'><strong>ID:</strong> {selected_order['id']}</p>
@@ -149,7 +150,7 @@ with tab3:
             unsafe_allow_html=True
         )
         
-        st.markdown("**Validar Código**")
+        section_title("search", "Validar código")
         sku_input = st.text_input("Escanear o ingresar SKU del producto", placeholder="Ej: PROD-001")
         
         if sku_input:
@@ -157,7 +158,7 @@ with tab3:
             if product and product["id"] == selected_order["producto_id"]:
                 st.success("✅ SKU validado correctamente!")
                 
-                if st.button("📦 Completar Picking", use_container_width=True, type="primary"):
+                if st.button("Completar Picking", use_container_width=True, type="primary"):
                     try:
                         usuario_id = st.session_state.get("usuario_id")
                         success, message = process_picking(selected_order_id, usuario_id)
@@ -171,12 +172,12 @@ with tab3:
             else:
                 st.error("❌ SKU no coincide con el producto de la orden.")
 
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 st.markdown("---")
-st.markdown("<br>", unsafe_allow_html=True)
+spacer()
 
 # Historial de Picking
-st.markdown("### 📊 Historial de Picking")
+section_title("list", "Historial de picking")
 all_picking = get_movements_by_type("PICKING", limit=50)
 if all_picking:
     df_all = pd.DataFrame(all_picking)
