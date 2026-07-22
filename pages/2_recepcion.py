@@ -9,9 +9,6 @@ from core.permissions import require_permission
 from components.sidebar import render_sidebar
 from components.navbar import render_navbar
 from components.alerts import alert_success, alert_error, alert_info, alert_warning
-from components.forms import input_text, input_number, input_select, form_submit_button
-from components.tables import render_table
-from components.kpi_card import render_kpi_card
 from services.product_service import get_all_products, get_product_by_sku, search_products
 from services.location_service import get_all_locations, get_available_locations
 from services.movement_service import (
@@ -25,48 +22,64 @@ require_auth()
 require_permission("recepcion", "leer")
 
 render_sidebar(current_page="recepcion")
-render_navbar(titulo="Recepción e Inspección", icono="📦")
+render_navbar(titulo="Recepción e Inspección", subtitulo="Gestión de entrada de mercancía", icono="📦")
 
-# Métricas rápidas
+# KPI Cards modernas
 recepciones_hoy = len([r for r in get_recepciones_recientes(100) if r['fecha_movimiento'].startswith(datetime.now().strftime('%Y-%m-%d'))])
 pendientes = len(get_recepciones_pendientes())
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4 = st.columns(4, gap="large")
+
 with col1:
-    render_kpi_card("Recepciones Hoy", recepciones_hoy, "📥", "green")
+    st.metric("📥 Recepciones Hoy", f"{recepciones_hoy:,}")
+
 with col2:
-    render_kpi_card("Pendientes Inspección", pendientes, "⏳", "orange")
+    st.metric("⏳ Pendientes", f"{pendientes:,}")
+
 with col3:
     productos_activos = len(get_all_products())
-    render_kpi_card("Productos Activos", productos_activos, "📦", "blue")
+    st.metric("📦 Productos", f"{productos_activos:,}")
+
 with col4:
     ubicaciones_disponibles = len(get_available_locations())
-    render_kpi_card("Ubicaciones Disponibles", ubicaciones_disponibles, "📍", "purple")
+    st.metric("📍 Ubicaciones Libres", f"{ubicaciones_disponibles:,}")
 
-# Tabs para diferentes funcionalidades
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Tabs modernos
 tab1, tab2, tab3, tab4 = st.tabs([
     "📥 Registrar Recepción", 
     "🔍 Inspeccionar", 
-    "📋 Historial de Recepciones",
+    "📋 Historial",
     "📊 Estadísticas"
 ])
 
 # Tab 1: Registrar Recepción
 with tab1:
-    st.header("Registrar Recepción de Mercancía")
+    st.markdown("### 📥 Registrar Recepción de Mercancía")
     
-    # Opciones de búsqueda de producto
-    busqueda_tipo = st.radio(
-        "Método de búsqueda",
-        ["Buscar por SKU", "Seleccionar de lista"],
-        horizontal=True
-    )
+    # Opciones de búsqueda de producto con diseño moderno
+    st.markdown("**Método de búsqueda**")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        busqueda_sku = st.button("Buscar por SKU", use_container_width=True)
+    with col_b:
+        busqueda_lista = st.button("Seleccionar de lista", use_container_width=True)
+    
+    # Determinar método seleccionado
+    if 'busqueda_tipo' not in st.session_state:
+        st.session_state.busqueda_tipo = "sku"
+    
+    if busqueda_sku:
+        st.session_state.busqueda_tipo = "sku"
+    elif busqueda_lista:
+        st.session_state.busqueda_tipo = "lista"
     
     producto_id = None
     producto_info = None
     
-    if busqueda_tipo == "Buscar por SKU":
-        sku = st.text_input("Ingrese el SKU del producto").strip().upper()
+    if st.session_state.busqueda_tipo == "sku":
+        sku = st.text_input("Ingrese el SKU del producto", placeholder="Ej: PROD-001").strip().upper()
         if sku:
             producto = get_product_by_sku(sku)
             if producto:
@@ -76,7 +89,7 @@ with tab1:
                 if producto.get('stock_total', 0) > 0:
                     st.info(f"Stock actual: {producto['stock_total']} unidades")
             elif sku:
-                alert_warning("Producto no encontrado o inactivo")
+                st.warning("Producto no encontrado o inactivo")
     else:
         productos = get_all_products()
         if productos:
@@ -87,13 +100,32 @@ with tab1:
     
     if producto_id and producto_info:
         with st.form("form_recepcion"):
-            st.subheader(f"Producto: {producto_info['nombre']}")
-            st.write(f"**SKU:** {producto_info['sku']}")
-            st.write(f"**Unidad de medida:** {producto_info['unidad_medida']}")
+            # Card con información del producto
+            st.markdown(
+                f"""
+                <div style='background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); 
+                            border-radius: 0.75rem; 
+                            padding: 1.25rem; 
+                            margin-bottom: 1.5rem;
+                            border: 1px solid #BFDBFE;'>
+                    <h4 style='margin: 0 0 0.5rem 0; color: #1E40AF; font-size: 1.1rem; font-weight: 600;'>
+                        {producto_info['nombre']}
+                    </h4>
+                    <p style='margin: 0.25rem 0; color: #3B82F6; font-size: 0.9rem;'>
+                        <strong>SKU:</strong> {producto_info['sku']}
+                    </p>
+                    <p style='margin: 0.25rem 0; color: #64748B; font-size: 0.9rem;'>
+                        <strong>Unidad:</strong> {producto_info['unidad_medida']}
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             
-            col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2, gap="large")
             
             with col1:
+                st.markdown("**Información de la recepción**")
                 cantidad = st.number_input(
                     "Cantidad a recibir", 
                     min_value=1, 
@@ -111,11 +143,10 @@ with tab1:
                 )
             
             with col2:
-                # Opciones de ubicación
-                ubicacion_opcion = st.radio(
+                st.markdown("**Ubicación y Referencia**")
+                ubicacion_opcion = st.selectbox(
                     "Asignación de ubicación",
-                    ["Automática", "Manual"],
-                    horizontal=True
+                    ["Automática", "Manual"]
                 )
                 
                 ubicacion_id = None
@@ -125,7 +156,6 @@ with tab1:
                         ubicacion_options = {f"{u['codigo']} - {u.get('zona_nombre', 'Sin zona')}": u["id"] for u in ubicaciones}
                         selected_ubicacion = st.selectbox("Seleccionar Ubicación", list(ubicacion_options.keys()))
                         ubicacion_id = ubicacion_options[selected_ubicacion]
-                        st.info(f"Ubicación seleccionada: {selected_ubicacion}")
                     else:
                         st.warning("No hay ubicaciones disponibles. Se usará asignación automática.")
                         ubicacion_opcion = "Automática"
@@ -134,8 +164,8 @@ with tab1:
                 
                 observaciones = st.text_area("Observaciones (opcional)", placeholder="Condiciones de la mercancía, embalaje, etc.")
             
-            # Campos adicionales para inspección rápida
-            st.subheader("Estado de la Mercancía")
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("**Estado de la Mercancía**")
             estado_mercancia = st.selectbox(
                 "Condición",
                 ["Buen estado", "Con detalles menores", "Dañada", "Rechazar"]
@@ -144,14 +174,14 @@ with tab1:
             if estado_mercancia == "Rechazar":
                 motivo_rechazo = st.text_area("Motivo del rechazo", required=True)
             
-            submitted = st.form_submit_button("Registrar Recepción", width='stretch')
+            st.markdown("<br>", unsafe_allow_html=True)
+            submitted = st.form_submit_button("📦 Registrar Recepción", use_container_width=True, type="primary")
             
             if submitted:
                 try:
                     usuario_id = st.session_state.get("usuario_id")
                     
                     if estado_mercancia == "Rechazar":
-                        # Crear recepción pero marcarla como rechazada
                         movimiento_id = create_recepcion(
                             producto_id=producto_id,
                             cantidad=cantidad,
@@ -162,9 +192,8 @@ with tab1:
                             observaciones=f"{observaciones or ''} - RECHAZADA: {motivo_rechazo}",
                             usuario_id=usuario_id
                         )
-                        alert_warning(f"Recepción registrada pero marcada como RECHAZADA. Motivo: {motivo_rechazo}")
+                        st.warning(f"⚠️ Recepción registrada pero marcada como RECHAZADA. Motivo: {motivo_rechazo}")
                     else:
-                        # Recepción normal
                         movimiento_id = create_recepcion(
                             producto_id=producto_id,
                             cantidad=cantidad,
@@ -175,26 +204,26 @@ with tab1:
                             observaciones=f"{observaciones or ''} - Estado: {estado_mercancia}",
                             usuario_id=usuario_id
                         )
-                        alert_success(f"Recepción registrada exitosamente! ID: {movimiento_id}")
+                        st.success(f"✅ Recepción registrada exitosamente! ID: {movimiento_id}")
                         
                         if ubicacion_id:
                             st.info(f"Producto almacenado en ubicación: {selected_ubicacion if ubicacion_opcion == 'Manual' else 'Asignación automática'}")
                         else:
-                            st.info("El producto está pendiente de asignación de ubicación. Pase a la pestaña 'Inspeccionar' para completar.")
+                            st.info("El producto está pendiente de asignación de ubicación.")
                     
                     st.rerun()
                     
                 except Exception as e:
-                    alert_error(f"Error al registrar la recepción: {str(e)}")
+                    st.error(f"❌ Error al registrar la recepción: {str(e)}")
 
 # Tab 2: Inspeccionar
 with tab2:
-    st.header("Inspección de Recepciones Pendientes")
+    st.markdown("### 🔍 Inspección de Recepciones Pendientes")
     
     pendientes = get_recepciones_pendientes()
     
     if not pendientes:
-        alert_info("No hay recepciones pendientes de inspección.")
+        st.info("✅ No hay recepciones pendientes de inspección.")
     else:
         st.info(f"Hay {len(pendientes)} recepciones pendientes de inspección.")
         
@@ -209,24 +238,35 @@ with tab2:
             movimiento_id = opciones[seleccion]
             movimiento = next(r for r in pendientes if r['id'] == movimiento_id)
             
-            st.subheader("Detalles de la Recepción")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.write(f"**ID:** {movimiento['id']}")
-                st.write(f"**Producto:** {movimiento['sku']} - {movimiento['producto_nombre']}")
-                st.write(f"**Cantidad:** {movimiento['cantidad']} unidades")
-            with col2:
-                st.write(f"**Fecha:** {movimiento['fecha_movimiento']}")
-                st.write(f"**Referencia:** {movimiento['referencia'] or 'N/A'}")
-                st.write(f"**Observaciones:** {movimiento['observaciones'] or 'Ninguna'}")
-            
-            st.divider()
+            # Card con detalles de la recepción
+            st.markdown(
+                f"""
+                <div style='background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); 
+                            border-radius: 0.75rem; 
+                            padding: 1.25rem; 
+                            margin-bottom: 1.5rem;
+                            border: 1px solid #FCD34D;'>
+                    <h4 style='margin: 0 0 1rem 0; color: #92400E; font-size: 1.1rem; font-weight: 600;'>
+                        📋 Detalles de la Recepción
+                    </h4>
+                    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;'>
+                        <p style='margin: 0; color: #78350F; font-size: 0.9rem;'><strong>ID:</strong> {movimiento['id']}</p>
+                        <p style='margin: 0; color: #78350F; font-size: 0.9rem;'><strong>Fecha:</strong> {movimiento['fecha_movimiento']}</p>
+                        <p style='margin: 0; color: #78350F; font-size: 0.9rem;'><strong>Producto:</strong> {movimiento['sku']} - {movimiento['producto_nombre']}</p>
+                        <p style='margin: 0; color: #78350F; font-size: 0.9rem;'><strong>Cantidad:</strong> {movimiento['cantidad']} unidades</p>
+                        <p style='margin: 0; color: #78350F; font-size: 0.9rem;'><strong>Referencia:</strong> {movimiento['referencia'] or 'N/A'}</p>
+                        <p style='margin: 0; color: #78350F; font-size: 0.9rem;'><strong>Observaciones:</strong> {movimiento['observaciones'] or 'Ninguna'}</p>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             
             # Formulario de inspección
             with st.form("form_inspeccion"):
-                st.subheader("Resultado de Inspección")
+                st.markdown("**Resultado de Inspección**")
                 
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(2, gap="large")
                 with col1:
                     aprobado = st.selectbox(
                         "Decisión",
@@ -235,7 +275,6 @@ with tab2:
                     ) == "Aprobar"
                     
                     if aprobado:
-                        # Asignar ubicación durante la inspección
                         ubicaciones = get_available_locations()
                         if ubicaciones:
                             ubicacion_options = {f"{u['codigo']} - {u.get('zona_nombre', 'Sin zona')}": u["id"] for u in ubicaciones}
@@ -263,7 +302,8 @@ with tab2:
                     placeholder="Detalles de la inspección, condiciones, calidad, etc."
                 )
                 
-                submitted = st.form_submit_button("Guardar Inspección", width='stretch')
+                st.markdown("<br>", unsafe_allow_html=True)
+                submitted = st.form_submit_button("✅ Guardar Inspección", use_container_width=True, type="primary")
                 
                 if submitted:
                     try:
@@ -281,88 +321,85 @@ with tab2:
                         
                         if success:
                             if aprobado:
-                                alert_success(f"✅ Recepción aprobada y almacenada en {selected_ubicacion if ubicacion_id else 'pendiente de ubicación'}")
+                                st.success(f"✅ Recepción aprobada y almacenada en {selected_ubicacion if ubicacion_id else 'pendiente de ubicación'}")
                             else:
-                                alert_warning("⚠️ Recepción rechazada. No se actualizará el inventario.")
+                                st.warning("⚠️ Recepción rechazada. No se actualizará el inventario.")
                             st.rerun()
                         else:
-                            alert_error("Error al procesar la inspección")
+                            st.error("Error al procesar la inspección")
                             
                     except Exception as e:
-                        alert_error(f"Error al guardar la inspección: {str(e)}")
+                        st.error(f"❌ Error al guardar la inspección: {str(e)}")
 
 # Tab 3: Historial de Recepciones
 with tab3:
-    st.header("Historial de Recepciones")
+    st.markdown("### 📋 Historial de Recepciones")
     
-    # Filtros
-    col1, col2 = st.columns(2)
-    with col1:
-        fecha_inicio = st.date_input(
-            "Fecha Inicio",
-            value=datetime.now().date() - timedelta(days=30)
-        )
-    with col2:
-        fecha_fin = st.date_input(
-            "Fecha Fin",
-            value=datetime.now().date()
-        )
+    # Filtros con diseño moderno
+    with st.container():
+        col1, col2 = st.columns(2, gap="large")
+        with col1:
+            fecha_inicio = st.date_input(
+                "Fecha Inicio",
+                value=datetime.now().date() - timedelta(days=30)
+            )
+        with col2:
+            fecha_fin = st.date_input(
+                "Fecha Fin",
+                value=datetime.now().date()
+            )
     
-    # Obtener recepciones
     recepciones = get_recepciones_recientes(limit=200)
     
-
     if recepciones:
-        # Asegurar que los datos sean diccionarios
-        if recepciones and hasattr(recepciones[0], 'keys'):
-            # Ya son diccionarios o Row objects
-            df_recepciones = pd.DataFrame(recepciones)
-        else:
-            # Son tuplas, intentar convertir
-            st.warning("Los datos no tienen formato de diccionario. Intentando convertir...")
-            # Esto no debería pasar si convertiste en el service
-            df_recepciones = pd.DataFrame(recepciones)
+        df_recepciones = pd.DataFrame(recepciones)
         
-        # Verificar que la columna existe
         if 'fecha_movimiento' in df_recepciones.columns:
             df_recepciones['fecha'] = pd.to_datetime(df_recepciones['fecha_movimiento']).dt.date
         else:
-            st.error("Error: No se encontró la columna 'fecha_movimiento'")
-            # Mostrar columnas disponibles para debug
-            st.write("Columnas disponibles:", df_recepciones.columns.tolist())
-            # Crear columna fecha como fallback
             df_recepciones['fecha'] = datetime.now().date()
         
-        # Filtrar por rango de fechas
         mask = (df_recepciones['fecha'] >= fecha_inicio) & (df_recepciones['fecha'] <= fecha_fin)
         df_filtrado = df_recepciones[mask]
         
         if not df_filtrado.empty:
-            # Mostrar estadísticas rápidas
-            col1, col2, col3 = st.columns(3)
+            # KPIs del historial
+            col1, col2, col3 = st.columns(3, gap="large")
             with col1:
-                st.metric("Total Recepciones", len(df_filtrado))
+                st.metric("📦 Total", len(df_filtrado))
             with col2:
                 completados = len(df_filtrado[df_filtrado['estado'] == 'COMPLETADO'])
-                st.metric("Completadas", completados)
+                st.metric("✅ Completadas", completados)
             with col3:
                 pendientes = len(df_filtrado[df_filtrado['estado'] != 'COMPLETADO'])
-                st.metric("Pendientes/Rechazadas", pendientes)
+                st.metric("⏳ Pendientes", pendientes)
             
-            # Mostrar tabla
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Tabla con estilos
             columns_to_show = ["id", "sku", "producto_nombre", "cantidad", "destino_codigo", "referencia", "estado", "fecha_movimiento"]
             available_columns = [col for col in columns_to_show if col in df_filtrado.columns]
-            render_table(df_filtrado[available_columns] if available_columns else df_filtrado)
+            
+            def highlight_estado_row(row):
+                if row['estado'] == 'COMPLETADO':
+                    return ['background-color: #dcfce7'] * len(row)
+                elif row['estado'] == 'PENDIENTE':
+                    return ['background-color: #fef9c3'] * len(row)
+                elif row['estado'] == 'RECHAZADO':
+                    return ['background-color: #fee2e2'] * len(row)
+                return [''] * len(row)
+            
+            styled_df = df_filtrado[available_columns].style.apply(highlight_estado_row, axis=1)
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
         else:
-            alert_info("No hay recepciones en el rango de fechas seleccionado.")
+            st.info("No hay recepciones en el rango de fechas seleccionado.")
     else:
-        alert_info("No hay recepciones registradas.")
+        st.info("No hay recepciones registradas.")
 
 # Tab 4: Estadísticas
 with tab4:
-    st.header("Estadísticas de Recepciones")
+    st.markdown("### 📊 Estadísticas de Recepciones")
     
-    # Gráfico de recepciones por día (simulado con datos reales)
     recepciones = get_recepciones_recientes(limit=500)
     
     if recepciones:
@@ -376,29 +413,30 @@ with tab4:
         }).reset_index()
         df_agrupado.columns = ['Fecha', 'Número de Recepciones', 'Total Unidades']
         
-        # Mostrar datos
-        st.subheader("Resumen por Día")
-        st.dataframe(df_agrupado, width='stretch')
+        # Resumen por día con diseño moderno
+        st.markdown("**Resumen por Día**")
+        st.dataframe(df_agrupado, use_container_width=True, hide_index=True)
         
         # Top productos recibidos
-        st.subheader("Top 10 Productos Más Recibidos")
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("**Top 10 Productos Más Recibidos**")
         top_productos = df.groupby(['sku', 'producto_nombre']).agg({
             'cantidad': 'sum'
         }).reset_index().sort_values('cantidad', ascending=False).head(10)
         
         if not top_productos.empty:
-            st.dataframe(top_productos, width='stretch')
+            st.dataframe(top_productos, use_container_width=True, hide_index=True)
         
         # Estadísticas de estado
-        st.subheader("Estado de Recepciones")
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("**Estado de Recepciones**")
         estado_counts = df['estado'].value_counts().reset_index()
         estado_counts.columns = ['Estado', 'Cantidad']
         
-        col1, col2 = st.columns([2, 1])
+        col1, col2 = st.columns([2, 1], gap="large")
         with col1:
-            st.dataframe(estado_counts, width='stretch')
+            st.dataframe(estado_counts, use_container_width=True, hide_index=True)
         with col2:
-            # Mostrar como gráfico de barras simple
             st.bar_chart(estado_counts.set_index('Estado'))
     else:
-        alert_info("No hay suficientes datos para mostrar estadísticas.") 
+        st.info("No hay suficientes datos para mostrar estadísticas.") 

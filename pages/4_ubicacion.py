@@ -3,11 +3,8 @@
 import pandas as pd
 import streamlit as st
 
-from components.alerts import alert_error, alert_success, alert_warning
-from components.forms import input_number, input_select, input_text
 from components.navbar import render_navbar
 from components.sidebar import render_sidebar
-from components.tables import render_table
 from core.auth import require_auth
 from core.permissions import require_permission
 from services.location_service import (
@@ -19,20 +16,15 @@ from services.location_service import (
     update_location,
 )
 
-# ── Autenticación y permisos ──────────────────────────────────────────────────
-
 require_auth()
 require_permission("ubicacion", "leer")
 
 can_write = "escribir" in st.session_state.get("permisos", {}).get("ubicacion", [])
 
-# ── Navegación ────────────────────────────────────────────────────────────────
-
 render_sidebar(current_page="ubicacion")
-render_navbar(titulo="Codificación y Ubicación", icono="🗺")
+render_navbar(titulo="Codificación y Ubicación", subtitulo="Gestión de ubicaciones y zonas del almacén", icono="🗺️")
 
-# ── Estado de sesión ──────────────────────────────────────────────────────────
-
+# Estado de sesión
 for key, default in {
     "ub_edit_id": None,
     "ub_delete_id": None,
@@ -41,15 +33,32 @@ for key, default in {
     if key not in st.session_state:
         st.session_state[key] = default
 
-# ── Datos de referencia ───────────────────────────────────────────────────────
-
+# Datos de referencia
 zones = get_all_zones()
 zone_options = {z["nombre"]: z["id"] for z in zones}
 zone_labels = ["Todas las zonas"] + list(zone_options.keys())
 
-# ── Filtros ───────────────────────────────────────────────────────────────────
+# KPIs
+total_locations = len(get_all_locations())
+occupied_locations = len([l for l in get_all_locations() if l["ocupada"]])
+free_locations = total_locations - occupied_locations
 
-col_f1, col_f2, col_f3 = st.columns([2, 3, 1])
+col1, col2, col3 = st.columns(3, gap="large")
+
+with col1:
+    st.metric("📍 Total Ubicaciones", f"{total_locations:,}")
+
+with col2:
+    st.metric("🟢 Libres", f"{free_locations:,}")
+
+with col3:
+    st.metric("🔴 Ocupadas", f"{occupied_locations:,}")
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Filtros con diseño moderno
+st.markdown("### 🔍 Filtros")
+col_f1, col_f2, col_f3 = st.columns([2, 3, 1], gap="large")
 
 with col_f1:
     selected_zone_label = st.selectbox(
@@ -68,24 +77,21 @@ with col_f2:
 with col_f3:
     st.markdown("<br>", unsafe_allow_html=True)
     if can_write:
-        if st.button("➕ Nueva ubicación", use_container_width=True):
+        if st.button("➕ Nueva Ubicación", use_container_width=True):
             st.session_state["ub_show_form"] = True
             st.session_state["ub_edit_id"] = None
             st.session_state["ub_delete_id"] = None
 
-# ── Formulario de alta / edición ──────────────────────────────────────────────
-
+# Formulario de alta / edición
 show_form = st.session_state["ub_show_form"] or st.session_state["ub_edit_id"] is not None
 
 if can_write and show_form:
     edit_id = st.session_state["ub_edit_id"]
     is_edit = edit_id is not None
 
-    form_title = f"✏️ Editar ubicación" if is_edit else "➕ Nueva ubicación"
+    form_title = f"✏️ Editar Ubicación" if is_edit else "➕ Nueva Ubicación"
 
     with st.expander(form_title, expanded=True):
-
-        # Prellenar valores si es edición
         prefill = {}
         if is_edit:
             prefill = get_location_by_id(edit_id) or {}
@@ -99,42 +105,53 @@ if can_write and show_form:
             return 0
 
         with st.form(key="ub_form"):
-            fc1, fc2 = st.columns(2)
+            fc1, fc2 = st.columns(2, gap="large")
 
             with fc1:
+                st.markdown("**Información de Zona**")
                 zona_label = st.selectbox(
                     "Zona *",
                     options=list(zone_options.keys()),
                     index=_zone_index_for_prefill(),
                 )
-                pasillo = input_text(
+                
+                st.markdown("**Estructura Física**")
+                pasillo = st.text_input(
                     "Pasillo *",
+                    value=prefill.get("pasillo", ""),
                     key="ub_form_pasillo",
                 )
-                nivel = input_text(
+                estante = st.text_input(
+                    "Estante *",
+                    value=prefill.get("estante", ""),
+                    key="ub_form_estante",
+                )
+                nivel = st.text_input(
                     "Nivel *",
+                    value=prefill.get("nivel", ""),
                     key="ub_form_nivel",
                 )
+                posicion = st.text_input(
+                    "Posición *",
+                    value=prefill.get("posicion", ""),
+                    key="ub_form_posicion",
+                )
+
+            with fc2:
+                st.markdown("**Código**")
+                codigo = st.text_input(
+                    "Código *",
+                    value=prefill.get("codigo", ""),
+                    key="ub_form_codigo",
+                )
+                
+                st.markdown("**Capacidad**")
                 capacidad_kg = st.number_input(
                     "Capacidad (kg)",
                     min_value=0.0,
                     step=0.1,
                     value=float(prefill.get("capacidad_kg") or 0.0),
                     key="ub_form_cap_kg",
-                )
-
-            with fc2:
-                codigo = input_text(
-                    "Código *",
-                    key="ub_form_codigo",
-                )
-                estante = input_text(
-                    "Estante *",
-                    key="ub_form_estante",
-                )
-                posicion = input_text(
-                    "Posición *",
-                    key="ub_form_posicion",
                 )
                 capacidad_m3 = st.number_input(
                     "Capacidad (m³)",
@@ -144,14 +161,13 @@ if can_write and show_form:
                     key="ub_form_cap_m3",
                 )
 
-            fb1, fb2, _ = st.columns([1, 1, 6])
+            st.markdown("<br>", unsafe_allow_html=True)
+            fb1, fb2 = st.columns([1, 1], gap="large")
             with fb1:
-                submitted = st.form_submit_button("Guardar" if is_edit else "Crear")
+                submitted = st.form_submit_button("💾 Guardar", use_container_width=True, type="primary")
             with fb2:
-                cancelled = st.form_submit_button("Cancelar")
+                cancelled = st.form_submit_button("❌ Cancelar", use_container_width=True)
 
-        # Nota: los valores de st.text_input dentro de st.form solo están
-        # disponibles tras el submit; recuperamos por session_state de Streamlit.
         if submitted:
             zona_id = zone_options.get(zona_label)
             cap_kg = capacidad_kg if capacidad_kg > 0 else None
@@ -170,7 +186,7 @@ if can_write and show_form:
                         capacidad_kg=cap_kg,
                         capacidad_m3=cap_m3,
                     )
-                    alert_success(f"Ubicación **{codigo}** actualizada correctamente.")
+                    st.success(f"✅ Ubicación **{codigo}** actualizada correctamente.")
                 else:
                     new_id = create_location(
                         zona_id=zona_id,
@@ -182,50 +198,48 @@ if can_write and show_form:
                         capacidad_kg=cap_kg,
                         capacidad_m3=cap_m3,
                     )
-                    alert_success(f"Ubicación **{codigo}** creada con ID {new_id}.")
+                    st.success(f"✅ Ubicación **{codigo}** creada con ID {new_id}.")
 
                 st.session_state["ub_show_form"] = False
                 st.session_state["ub_edit_id"] = None
                 st.rerun()
 
             except ValueError as exc:
-                alert_error(str(exc))
+                st.error(f"❌ Error: {str(exc)}")
 
         if cancelled:
             st.session_state["ub_show_form"] = False
             st.session_state["ub_edit_id"] = None
             st.rerun()
 
-# ── Confirmación de eliminación ───────────────────────────────────────────────
-
+# Confirmación de eliminación
 delete_id = st.session_state.get("ub_delete_id")
 if delete_id is not None:
     loc = get_location_by_id(delete_id)
     if loc:
-        alert_warning(
-            f"¿Eliminar la ubicación **{loc['codigo']}** ({loc['zona_nombre']})? "
+        st.warning(
+            f"⚠️ ¿Eliminar la ubicación **{loc['codigo']}** ({loc['zona_nombre']})? "
             "Esta acción no se puede deshacer."
         )
-        cd1, cd2, _ = st.columns([1, 1, 6])
+        cd1, cd2 = st.columns([1, 1], gap="large")
         with cd1:
-            if st.button("✅ Confirmar", key="ub_confirm_delete"):
+            if st.button("✅ Confirmar", key="ub_confirm_delete", use_container_width=True):
                 try:
                     delete_location(delete_id)
-                    alert_success(f"Ubicación **{loc['codigo']}** eliminada.")
+                    st.success(f"✅ Ubicación **{loc['codigo']}** eliminada.")
                     st.session_state["ub_delete_id"] = None
                     st.rerun()
                 except ValueError as exc:
-                    alert_error(str(exc))
+                    st.error(f"❌ Error: {str(exc)}")
                     st.session_state["ub_delete_id"] = None
         with cd2:
-            if st.button("❌ Cancelar", key="ub_cancel_delete"):
+            if st.button("❌ Cancelar", key="ub_cancel_delete", use_container_width=True):
                 st.session_state["ub_delete_id"] = None
                 st.rerun()
 
-st.markdown("---")
+st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Tabla de ubicaciones ──────────────────────────────────────────────────────
-
+# Tabla de ubicaciones
 filter_zona_id = zone_options.get(selected_zone_label) if selected_zone_label != "Todas las zonas" else None
 locations = get_all_locations(zona_id=filter_zona_id, search_term=search_term)
 
@@ -233,9 +247,8 @@ if not locations:
     alert_info_msg = "No se encontraron ubicaciones"
     if selected_zone_label != "Todas las zonas" or search_term:
         alert_info_msg += " con los filtros aplicados"
-    alert_warning(alert_info_msg + ".")
+    st.info(f"ℹ️ {alert_info_msg}.")
 else:
-    # Construir DataFrame para visualización
     rows = []
     for loc in locations:
         rows.append({
@@ -246,21 +259,26 @@ else:
             "Estante": loc["estante"],
             "Nivel": loc["nivel"],
             "Posición": loc["posicion"],
-            "Cap. Kg": loc["capacidad_kg"] if loc["capacidad_kg"] else "—",
-            "Cap. m³": loc["capacidad_m3"] if loc["capacidad_m3"] else "—",
+            "Cap. Kg": f"{loc['capacidad_kg']:.1f}" if loc["capacidad_kg"] else "—",
+            "Cap. m³": f"{loc['capacidad_m3']:.2f}" if loc["capacidad_m3"] else "—",
             "Estado": "🔴 Ocupada" if loc["ocupada"] else "🟢 Libre",
         })
 
     df = pd.DataFrame(rows)
+    
+    def highlight_estado_row(row):
+        if row["Estado"] == "🔴 Ocupada":
+            return ['background-color: #fee2e2'] * len(row)
+        return ['background-color: #dcfce7'] * len(row)
+    
+    styled_df = df.style.apply(highlight_estado_row, axis=1)
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
-    st.caption(f"{len(locations)} ubicación(es) encontrada(s)")
-    render_table(df)
-
-    # ── Acciones por fila (solo con permiso de escritura) ─────────────────────
-
+    # Acciones por fila
     if can_write:
-        st.markdown("**Acciones**")
-        ac1, ac2, ac3 = st.columns([2, 1, 1])
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### ✏️ Acciones")
+        ac1, ac2, ac3 = st.columns([2, 1, 1], gap="large")
 
         with ac1:
             location_labels = [f"{loc['codigo']} — {loc['zona_nombre']}" for loc in locations]

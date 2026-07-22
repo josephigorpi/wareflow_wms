@@ -112,7 +112,18 @@ def is_authenticated() -> bool:
 def require_auth() -> None:
     init_session()
     if not is_authenticated():
-        st.warning("Por favor, inicie sesión para acceder al sistema.")
+        try:
+            st.switch_page("pages/0_login.py")
+        except AttributeError:
+            st.markdown(
+                """
+                <meta http-equiv="refresh" content="0; url=/pages/0_login" />
+                <script>
+                    window.location.href = "/pages/0_login";
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
         st.stop()
 
 
